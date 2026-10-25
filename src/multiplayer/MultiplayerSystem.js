@@ -617,17 +617,22 @@ class RemotePlayer {
       );
 
       const dist = activeCamera.position.distanceTo(headWorldPos);
+      const toHead = headWorldPos.clone().sub(activeCamera.position);
+      const camDir = new THREE.Vector3();
+      activeCamera.getWorldDirection(camDir);
+      const inFront = camDir.dot(toHead) > 0.1;
+
       headWorldPos.project(activeCamera);
 
-      // In front of camera check (z < 1.0) and visual range check (< 50m)
-      if (headWorldPos.z < 1.0 && dist < 50) {
+      // In front of camera check and visual range check (< 65m)
+      if (inFront && dist < 65) {
         const screenX = (headWorldPos.x * 0.5 + 0.5) * window.innerWidth;
         const screenY = (-headWorldPos.y * 0.5 + 0.5) * window.innerHeight;
 
         this.tagElement.style.display = 'flex';
         this.tagElement.style.left = `${Math.round(screenX)}px`;
         this.tagElement.style.top = `${Math.round(screenY)}px`;
-        this.tagElement.style.opacity = dist > 40 ? `${(50 - dist) / 10}` : '1';
+        this.tagElement.style.opacity = dist > 45 ? `${(65 - dist) / 20}` : '1';
 
         if (this.bubbleElement && this.speechTimer > 0) {
           this.bubbleElement.style.display = 'block';
@@ -696,13 +701,8 @@ class MultiplayerSystem {
       if (!document.hidden) sendInstantSync();
     });
 
-    // Cleanly close connection on mobile app suspend or page leave to prevent ghost player avatars
+    // Cleanly close connection on actual window unload
     window.addEventListener('beforeunload', () => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.close();
-      }
-    });
-    window.addEventListener('pagehide', () => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.close();
       }
@@ -788,6 +788,14 @@ class MultiplayerSystem {
     }));
   }
 
+  sendMonsterSync(monsters) {
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({
+      type: 'monster_sync',
+      monsters: monsters
+    }));
+  }
+
   sendMonsterDamage(monsterId, amount, isCrit, attackerPos) {
     if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({
@@ -797,6 +805,14 @@ class MultiplayerSystem {
       isCrit: !!isCrit,
       attackerName: this.playerName,
       attackerPos: attackerPos ? { x: Number(attackerPos.x.toFixed(2)), y: Number(attackerPos.y.toFixed(2)), z: Number(attackerPos.z.toFixed(2)) } : null
+    }));
+  }
+
+  sendMonsterSync(monsters) {
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({
+      type: 'monster_sync',
+      monsters: monsters
     }));
   }
 
@@ -819,6 +835,14 @@ class MultiplayerSystem {
       anim: anim,
       isRiding: !!isRiding,
       level: lvl
+    }));
+  }
+
+  sendMonsterSync(monsters) {
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({
+      type: 'monster_sync',
+      monsters: monsters
     }));
   }
 
@@ -906,6 +930,17 @@ class MultiplayerSystem {
             window.gameHUD.showSimpleToast(`⚠️ ${monster.name} has respawned!`);
           }
         }
+      }
+    }
+
+    else if (msg.type === 'monster_sync') {
+      if (window.combatSystem && Array.isArray(msg.monsters)) {
+        msg.monsters.forEach(mNet => {
+          const m = window.combatSystem.getMonsterById(mNet.id);
+          if (m && !m.isDead) {
+            m.syncRemoteState(mNet.x, mNet.y, mNet.z, mNet.rotY, mNet.state);
+          }
+        });
       }
     }
 

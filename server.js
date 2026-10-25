@@ -119,14 +119,17 @@ function broadcast(msg, excludeWs = null) {
   });
 }
 
-// Heartbeat Ping-Pong to automatically prune Ghost / Stale Mobile connections
+// Heartbeat Ping-Pong to prune truly dead sockets without disconnecting active mobile phones
 function heartbeat() {
   this.isAlive = true;
+  this.lastActive = Date.now();
 }
 
 const pingInterval = setInterval(() => {
+  const now = Date.now();
   wss.clients.forEach((ws) => {
-    if (ws.isAlive === false) {
+    // Only evict if client hasn't sent any message or pong for over 45 seconds
+    if (ws.lastActive && (now - ws.lastActive > 45000)) {
       const p = activePlayers.get(ws);
       if (p) {
         console.log(`[Ghost Prune] Disconnecting inactive connection for ${p.name} (${p.id})`);
@@ -145,14 +148,14 @@ const pingInterval = setInterval(() => {
       }
       return ws.terminate();
     }
-    ws.isAlive = false;
+
     try {
       ws.ping();
     } catch (e) {
       ws.terminate();
     }
   });
-}, 8000); // Check every 8 seconds
+}, 25000); // Check every 25 seconds
 
 wss.on('close', () => {
   clearInterval(pingInterval);
@@ -160,11 +163,14 @@ wss.on('close', () => {
 
 wss.on('connection', (ws) => {
   ws.isAlive = true;
+  ws.lastActive = Date.now();
   ws.on('pong', heartbeat);
 
   const playerId = 'hero_' + (nextId++);
 
   ws.on('message', (raw) => {
+    ws.isAlive = true;
+    ws.lastActive = Date.now();
     try {
       const data = JSON.parse(raw);
 
@@ -344,6 +350,15 @@ wss.on('connection', (ws) => {
             isKilled: isKilled,
             attackerName: data.attackerName || 'Hero',
             attackerPos: data.attackerPos
+          }, ws);
+        }
+      }
+
+      else if (data.type === 'monster_sync') {
+        if (data.monsters && Array.isArray(data.monsters)) {
+          broadcast({
+            type: 'monster_sync',
+            monsters: data.monsters
           }, ws);
         }
       }

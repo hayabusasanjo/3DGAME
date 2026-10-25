@@ -539,6 +539,31 @@ class CombatSystem {
       }, getGround);
     });
 
+    // Broadcast live aggroed monsters to party members for real-time co-op positioning
+    if (!this.monsterSyncTimer) this.monsterSyncTimer = 0;
+    this.monsterSyncTimer += delta;
+    if (this.monsterSyncTimer >= 0.08) {
+      this.monsterSyncTimer = 0;
+      if (window.multiplayerSystem && window.multiplayerSystem.isConnected) {
+        const aggroed = [];
+        this.monsters.forEach(m => {
+          if (!m.isDead && (m.state === 'AGGRO' || m.state === 'ATTACK') && !m.isControlledRemotely) {
+            aggroed.push({
+              id: m.id,
+              x: Number(m.position.x.toFixed(2)),
+              y: Number(m.position.y.toFixed(2)),
+              z: Number(m.position.z.toFixed(2)),
+              rotY: Number(m.group.rotation.y.toFixed(2)),
+              state: m.state
+            });
+          }
+        });
+        if (aggroed.length > 0) {
+          window.multiplayerSystem.sendMonsterSync(aggroed);
+        }
+      }
+    }
+
     // 2. Update Magic Projectiles (Elf Mage)
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const proj = this.projectiles[i];

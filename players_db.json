@@ -88,5 +88,23 @@
     "exp": 0,
     "rank": "RANK F",
     "inventory": []
+  },
+  "Tanjiro": {
+    "name": "Tanjiro",
+    "classId": "human",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "Nezuko": {
+    "name": "Nezuko",
+    "classId": "elf",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
   }
 }
