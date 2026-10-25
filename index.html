@@ -29,6 +29,50 @@
       height: 100%;
       display: block;
     }
+
+    /* Auto-Landscape Orientation Prompt for Mobile */
+    #portrait-rotate-prompt {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #090919 100%);
+      z-index: 999999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+      text-align: center;
+      padding: 24px;
+    }
+    @media screen and (orientation: portrait) and (max-width: 1024px) {
+      #portrait-rotate-prompt {
+        display: flex !important;
+      }
+    }
+    .rotate-phone-anim {
+      font-size: 56px;
+      animation: rotatePhone 2.2s infinite ease-in-out;
+      margin-bottom: 20px;
+    }
+    @keyframes rotatePhone {
+      0%, 20% { transform: rotate(0deg); }
+      50%, 70% { transform: rotate(-90deg); }
+      100% { transform: rotate(0deg); }
+    }
+    .rotate-title {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+    .rotate-sub {
+      font-size: 13px;
+      color: #94a3b8;
+      max-width: 280px;
+      line-height: 1.5;
+    }
   </style>
 
   <!-- Stable Three.js & Core Loaders -->
@@ -36,33 +80,48 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
-  <!-- Modular Game Systems (Version 30 - Mobile Touch Controls, Virtual Joystick & Action Buttons) -->
-  <script src="./src/world/Stage.js?v=30"></script>
-  <script src="./src/world/Town.js?v=30"></script>
-  <script src="./src/world/Plains.js?v=30"></script>
-  <script src="./src/world/Dungeon.js?v=30"></script>
-  <script src="./src/world/EnvironmentSystem.js?v=30"></script>
-  <script src="./src/world/WaystoneSystem.js?v=30"></script>
-  <script src="./src/characters/CharacterLoader.js?v=30"></script>
-  <script src="./src/characters/PlayerController.js?v=30"></script>
-  <script src="./src/characters/MountSystem.js?v=30"></script>
-  <script src="./src/combat/SoundEffects.js?v=30"></script>
-  <script src="./src/combat/DamageText.js?v=30"></script>
-  <script src="./src/combat/SkillSystem.js?v=30"></script>
-  <script src="./src/combat/InventorySystem.js?v=30"></script>
-  <script src="./src/combat/Monster.js?v=30"></script>
-  <script src="./src/combat/CombatSystem.js?v=30"></script>
-  <script src="./src/combat/QuestSystem.js?v=30"></script>
-  <script src="./src/ui/CharacterSelectUI.js?v=30"></script>
-  <script src="./src/ui/SaveSettingsSystem.js?v=30"></script>
-  <script src="./src/ui/HUD.js?v=30"></script>
-  <script src="./src/ui/MobileControls.js?v=30"></script>
-  <script src="./src/multiplayer/MultiplayerSystem.js?v=30"></script>
+  <!-- Modular Game Systems (Version 31 - Ultra-Clean Mobile HUD, 60 FPS Mobile Optimization & Auto-Landscape) -->
+  <script src="./src/world/Stage.js?v=31"></script>
+  <script src="./src/world/Town.js?v=31"></script>
+  <script src="./src/world/Plains.js?v=31"></script>
+  <script src="./src/world/Dungeon.js?v=31"></script>
+  <script src="./src/world/EnvironmentSystem.js?v=31"></script>
+  <script src="./src/world/WaystoneSystem.js?v=31"></script>
+  <script src="./src/characters/CharacterLoader.js?v=31"></script>
+  <script src="./src/characters/PlayerController.js?v=31"></script>
+  <script src="./src/characters/MountSystem.js?v=31"></script>
+  <script src="./src/combat/SoundEffects.js?v=31"></script>
+  <script src="./src/combat/DamageText.js?v=31"></script>
+  <script src="./src/combat/SkillSystem.js?v=31"></script>
+  <script src="./src/combat/InventorySystem.js?v=31"></script>
+  <script src="./src/combat/Monster.js?v=31"></script>
+  <script src="./src/combat/CombatSystem.js?v=31"></script>
+  <script src="./src/combat/QuestSystem.js?v=31"></script>
+  <script src="./src/ui/CharacterSelectUI.js?v=31"></script>
+  <script src="./src/ui/SaveSettingsSystem.js?v=31"></script>
+  <script src="./src/ui/HUD.js?v=31"></script>
+  <script src="./src/ui/MobileControls.js?v=31"></script>
+  <script src="./src/multiplayer/MultiplayerSystem.js?v=31"></script>
 </head>
 <body>
+  <!-- Auto-Landscape Warning on Mobile -->
+  <div id="portrait-rotate-prompt">
+    <div class="rotate-phone-anim">📱</div>
+    <div class="rotate-title">PLEASE ROTATE TO LANDSCAPE</div>
+    <div class="rotate-sub">Isekai Chronicles is built for widescreen landscape gaming. Turn your phone sideways to play!</div>
+  </div>
+
   <canvas id="viewport"></canvas>
 
   <script>
+    // Request landscape lock on first user touch
+    const reqOrientationLock = () => {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+    };
+    window.addEventListener('touchstart', reqOrientationLock, { once: true });
+    window.addEventListener('click', reqOrientationLock, { once: true });
     window.addEventListener('DOMContentLoaded', () => {
       const canvas = document.getElementById('viewport');
       let gameState = 'SELECT'; // 'SELECT' or 'PLAYING'

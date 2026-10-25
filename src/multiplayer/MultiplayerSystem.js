@@ -826,10 +826,29 @@ class MultiplayerSystem {
           font-weight: 700;
           cursor: pointer;
         }
+
+        /* Mobile Responsive Chat: Collapsed by default on mobile, opens cleanly as modal */
+        @media (max-width: 1024px), (pointer: coarse) {
+          #game-chat-panel {
+            left: 12px !important;
+            top: 56px !important;
+            bottom: auto !important;
+            width: min(320px, 85vw) !important;
+            max-height: 180px !important;
+            z-index: 100 !important;
+            background: rgba(15, 23, 42, 0.96) !important;
+            border: 1.5px solid #38bdf8 !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+            display: none;
+          }
+          #game-chat-panel.mobile-open {
+            display: flex !important;
+          }
+        }
       </style>
       <div id="chat-header">
         <span><span id="chat-status-dot"></span>AETHERIA WORLD CHAT</span>
-        <span style="font-size: 10px; color: #94a3b8;">Press [ENTER] to chat</span>
+        <button id="chat-close-btn" style="background: none; border: none; color: #94a3b8; font-size: 14px; font-weight: bold; cursor: pointer; padding: 0 6px;">✕</button>
       </div>
       <div id="chat-messages"></div>
       <div id="chat-input-row">
@@ -842,6 +861,13 @@ class MultiplayerSystem {
 
     const input = document.getElementById('chat-input');
     const sendBtn = document.getElementById('chat-send-btn');
+    const closeBtn = document.getElementById('chat-close-btn');
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        chatContainer.classList.remove('mobile-open');
+      });
+    }
 
     const sendCurrentMsg = () => {
       const val = input.value.trim();

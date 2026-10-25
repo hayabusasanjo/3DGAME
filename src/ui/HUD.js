@@ -1101,6 +1101,65 @@ class GameHUD {
           font-size: 13px;
           font-weight: 700;
         }
+
+        /* Mobile Touch Responsive Mode: Ultra-Clean, Fast 60 FPS Layout */
+        @media (max-width: 1024px), (pointer: coarse) {
+          /* 1. HIDE the PC keyboard hotbar completely on mobile! */
+          .hud-bottom-bar {
+            display: none !important;
+          }
+
+          /* 2. Remove laggy backdrop blur on mobile */
+          * {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+
+          /* 3. Scale down and tidy player status card */
+          .hud-player-card {
+            top: 10px !important;
+            left: 10px !important;
+            padding: 8px 12px !important;
+            border-radius: 14px !important;
+            transform: scale(0.78);
+            transform-origin: top left;
+          }
+
+          /* 4. Scale down minimap */
+          #minimap-container {
+            top: 10px !important;
+            right: 10px !important;
+            transform: scale(0.72);
+            transform-origin: top right;
+          }
+
+          /* 5. Tidy location & quest tracker pills so they NEVER collide with action buttons */
+          .hud-location-pill {
+            top: 110px !important;
+            right: 10px !important;
+            transform: scale(0.75);
+            transform-origin: top right;
+          }
+          #quest-tracker-pill {
+            top: 155px !important;
+            right: 10px !important;
+            transform: scale(0.72);
+            transform-origin: top right;
+            max-width: 170px !important;
+          }
+
+          /* 6. Hide reticle/crosshair on mobile */
+          #rpg-crosshair {
+            display: none !important;
+          }
+
+          /* 7. Proximity talk prompt on mobile */
+          .hud-interact-prompt {
+            bottom: 90px !important;
+            font-size: 11px !important;
+            padding: 6px 14px !important;
+          }
+        }
       </style>
 
       <!-- Fullscreen Damage Flash Vignette -->

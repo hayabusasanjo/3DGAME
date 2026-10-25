@@ -1,7 +1,6 @@
-// MobileControls.js - Touchscreen Virtual Joystick & Action Buttons Engine
-// Supports Android, iOS, tablets, and mobile APK immersion.
-// Features: 360-degree analog Virtual Joystick, Touch Camera Swipe,
-// Rapid/Hold Attack, Skills, Jump, Mount, Potion & Inventory Buttons.
+// MobileControls.js - Ultra-Clean High-Performance Mobile RPG Controls
+// Features: Ergonomic Virtual Joystick, Responsive Action Button Arc, Floating Chat Toggle,
+// and 60 FPS lightweight styling without laggy backdrop filters.
 
 class MobileControls {
   constructor(playerController, skillSystem, combatSystem, mountSystem, inventorySystem) {
@@ -17,7 +16,6 @@ class MobileControls {
     this.lastCamX = 0;
     this.lastCamY = 0;
 
-    this.joystickCenter = { x: 0, y: 0 };
     this.maxRadius = 45;
 
     this.createUI();
@@ -39,18 +37,43 @@ class MobileControls {
           display: ${this.isTouchDevice ? 'block' : 'none'};
         }
 
-        /* Virtual Joystick (Bottom Left) */
+        /* Top-Left Floating Chat Button */
+        #mobile-chat-toggle-btn {
+          position: absolute;
+          top: 14px;
+          left: 216px;
+          width: 38px;
+          height: 38px;
+          border-radius: 50%;
+          background: rgba(15, 23, 42, 0.90);
+          border: 2px solid #38bdf8;
+          color: white;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          pointer-events: auto;
+          z-index: 60;
+          touch-action: manipulation;
+          cursor: pointer;
+        }
+        #mobile-chat-toggle-btn:active {
+          transform: scale(0.92);
+          background: #0284c7;
+        }
+
+        /* Virtual Joystick (Clean Bottom-Left, ZERO Overlap!) */
         #mobile-joystick-base {
           position: absolute;
-          bottom: 36px;
-          left: 36px;
-          width: 120px;
-          height: 120px;
+          bottom: 24px;
+          left: 24px;
+          width: 110px;
+          height: 110px;
           border-radius: 50%;
-          background: rgba(15, 23, 42, 0.45);
-          backdrop-filter: blur(8px);
-          border: 2px solid rgba(56, 189, 248, 0.4);
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+          background: rgba(15, 23, 42, 0.55);
+          border: 2px solid rgba(56, 189, 248, 0.45);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
           pointer-events: auto;
           display: flex;
           align-items: center;
@@ -58,23 +81,23 @@ class MobileControls {
           touch-action: none;
         }
         #mobile-joystick-stick {
-          width: 50px;
-          height: 50px;
+          width: 46px;
+          height: 46px;
           border-radius: 50%;
           background: radial-gradient(circle at 35% 35%, #38bdf8, #0284c7);
-          box-shadow: 0 0 12px rgba(56, 189, 248, 0.7);
+          box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
           border: 2px solid #e0f2fe;
           transform: translate(0px, 0px);
           pointer-events: none;
         }
 
-        /* Action Buttons Cluster (Bottom Right) */
+        /* Ergonomic Action Buttons Cluster (Bottom Right) */
         .mobile-action-cluster {
           position: absolute;
-          bottom: 28px;
-          right: 28px;
-          width: 200px;
-          height: 200px;
+          bottom: 16px;
+          right: 16px;
+          width: 220px;
+          height: 220px;
           pointer-events: none;
         }
 
@@ -89,93 +112,108 @@ class MobileControls {
           font-weight: 800;
           pointer-events: auto;
           touch-action: none;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
           transition: transform 0.08s ease, filter 0.08s ease;
-          border: 2px solid rgba(255, 255, 255, 0.25);
+          border: 2px solid rgba(255, 255, 255, 0.3);
         }
         .m-btn:active, .m-btn.pressed {
-          transform: scale(0.92);
-          filter: brightness(1.25);
+          transform: scale(0.90);
+          filter: brightness(1.3);
         }
 
-        /* Main Big Attack Button */
+        /* Big Attack Button (Primary thumb resting point) */
         #m-btn-attack {
-          bottom: 24px;
-          right: 24px;
-          width: 76px;
-          height: 76px;
+          bottom: 16px;
+          right: 16px;
+          width: 68px;
+          height: 68px;
           background: radial-gradient(circle at 35% 35%, #f43f5e, #be123c);
-          font-size: 32px;
+          font-size: 28px;
           border-color: #fda4af;
-          box-shadow: 0 0 20px rgba(244, 63, 94, 0.65);
+          box-shadow: 0 0 16px rgba(244, 63, 94, 0.7);
         }
 
         /* Jump Button */
         #m-btn-jump {
-          bottom: 110px;
-          right: 24px;
-          width: 50px;
-          height: 50px;
-          background: rgba(30, 41, 59, 0.75);
-          backdrop-filter: blur(8px);
-          font-size: 20px;
-          border-color: #94a3b8;
+          bottom: 96px;
+          right: 16px;
+          width: 46px;
+          height: 46px;
+          background: rgba(30, 41, 59, 0.85);
+          font-size: 19px;
+          border-color: #cbd5e1;
         }
 
         /* Skill 1 Button (Q) */
         #m-btn-skill1 {
-          bottom: 84px;
-          right: 90px;
-          width: 52px;
-          height: 52px;
+          bottom: 74px;
+          right: 74px;
+          width: 48px;
+          height: 48px;
           background: radial-gradient(circle at 35% 35%, #0ea5e9, #0369a1);
-          font-size: 22px;
+          font-size: 20px;
           border-color: #7dd3fc;
         }
 
         /* Skill 2 Button (E) */
         #m-btn-skill2 {
-          bottom: 24px;
-          right: 116px;
-          width: 52px;
-          height: 52px;
+          bottom: 16px;
+          right: 96px;
+          width: 48px;
+          height: 48px;
           background: radial-gradient(circle at 35% 35%, #8b5cf6, #6d28d9);
-          font-size: 22px;
+          font-size: 20px;
           border-color: #c4b5fd;
         }
 
-        /* Quick Utility Bar (Top of Action Cluster) */
+        /* Mount Button (Wolf) */
         #m-btn-mount {
-          bottom: 148px;
-          right: 88px;
-          width: 44px;
-          height: 44px;
-          background: rgba(15, 23, 42, 0.8);
-          font-size: 18px;
+          bottom: 132px;
+          right: 74px;
+          width: 42px;
+          height: 42px;
+          background: rgba(15, 23, 42, 0.85);
+          font-size: 17px;
           border-color: #38bdf8;
         }
+
+        /* Potion Button */
         #m-btn-potion {
-          bottom: 148px;
-          right: 144px;
-          width: 44px;
-          height: 44px;
-          background: rgba(15, 23, 42, 0.8);
-          font-size: 18px;
+          bottom: 132px;
+          right: 126px;
+          width: 42px;
+          height: 42px;
+          background: rgba(15, 23, 42, 0.85);
+          font-size: 17px;
           border-color: #34d399;
         }
 
-        /* Camera Swipe Touch Zone (Right Screen Half) */
+        /* Bag Button */
+        #m-btn-bag {
+          bottom: 74px;
+          right: 132px;
+          width: 42px;
+          height: 42px;
+          background: rgba(15, 23, 42, 0.85);
+          font-size: 17px;
+          border-color: #fbbf24;
+        }
+
+        /* Camera Swipe Touch Zone (Upper & Middle Screen) */
         #mobile-camera-zone {
           position: fixed;
           top: 0;
           right: 0;
-          width: 60%;
-          height: 70%;
+          width: 65%;
+          height: 60%;
           pointer-events: auto;
           touch-action: none;
           z-index: 52;
         }
       </style>
+
+      <!-- Floating Chat Toggle for Mobile -->
+      <button id="mobile-chat-toggle-btn" title="Open World Chat">💬</button>
 
       <!-- Right Touch Area for Camera Pan -->
       <div id="mobile-camera-zone"></div>
@@ -185,7 +223,7 @@ class MobileControls {
         <div id="mobile-joystick-stick"></div>
       </div>
 
-      <!-- Action Buttons -->
+      <!-- Action Buttons Cluster -->
       <div class="mobile-action-cluster">
         <button class="m-btn" id="m-btn-attack" title="Attack">⚔️</button>
         <button class="m-btn" id="m-btn-jump" title="Jump">🦘</button>
@@ -193,6 +231,7 @@ class MobileControls {
         <button class="m-btn" id="m-btn-skill2" title="Skill 2">✨</button>
         <button class="m-btn" id="m-btn-mount" title="Wolf Mount">🐺</button>
         <button class="m-btn" id="m-btn-potion" title="Heal Potion">🧪</button>
+        <button class="m-btn" id="m-btn-bag" title="Open Inventory">🎒</button>
       </div>
     `;
 
@@ -202,8 +241,23 @@ class MobileControls {
     this.joystickBase = document.getElementById('mobile-joystick-base');
     this.joystickStick = document.getElementById('mobile-joystick-stick');
     this.cameraZone = document.getElementById('mobile-camera-zone');
+    this.chatToggleBtn = document.getElementById('mobile-chat-toggle-btn');
 
-    // Update Skill Icons based on Hero Class
+    // Chat Toggle Logic
+    if (this.chatToggleBtn) {
+      this.chatToggleBtn.addEventListener('click', () => {
+        const chatPanel = document.getElementById('game-chat-panel');
+        if (chatPanel) {
+          chatPanel.classList.toggle('mobile-open');
+          const input = document.getElementById('chat-input');
+          if (chatPanel.classList.contains('mobile-open') && input) {
+            setTimeout(() => input.focus(), 100);
+          }
+        }
+      });
+    }
+
+    // Update Skill Icons based on Class
     if (this.skillSystem && this.skillSystem.skillsByRace) {
       const race = this.skillSystem.race || 'human';
       const skills = this.skillSystem.skillsByRace[race];
@@ -215,7 +269,7 @@ class MobileControls {
   }
 
   bindTouchEvents() {
-    // 1. Virtual Joystick Touch Handler
+    // 1. Virtual Joystick
     const handleJoystickMove = (touchX, touchY) => {
       const rect = this.joystickBase.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -232,13 +286,11 @@ class MobileControls {
 
       this.joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
 
-      // Pass normalized movement vector to PlayerController
       const normX = dx / this.maxRadius;
       const normY = dy / this.maxRadius;
 
       if (this.playerController) {
         this.playerController.joystickInput = { x: normX, y: normY };
-        // Auto sprint if pushed hard
         this.playerController.keys.shift = (dist > this.maxRadius * 0.75);
       }
     };
@@ -283,7 +335,7 @@ class MobileControls {
 
     window.addEventListener('touchcancel', () => resetJoystick());
 
-    // 2. Touch Camera Pan Zone (Right Screen Half)
+    // 2. Camera Touch Pan Zone
     this.cameraZone.addEventListener('touchstart', (e) => {
       const touch = e.changedTouches[0];
       this.cameraTouchId = touch.identifier;
@@ -345,7 +397,7 @@ class MobileControls {
       }, { passive: false });
     };
 
-    // Attack (Continuous on hold)
+    // Attack
     bindButton('m-btn-attack', () => {
       if (this.playerController) {
         this.playerController.isAttackHolding = true;
@@ -380,6 +432,14 @@ class MobileControls {
     // Healing Potion (1)
     bindButton('m-btn-potion', () => {
       if (this.combatSystem) this.combatSystem.usePotion();
+    });
+
+    // Bag (I)
+    bindButton('m-btn-bag', () => {
+      const bagModal = document.getElementById('inventory-modal');
+      if (bagModal) {
+        bagModal.style.display = bagModal.style.display === 'flex' ? 'none' : 'flex';
+      }
     });
   }
 
