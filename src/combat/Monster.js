@@ -6,6 +6,7 @@ class Monster {
   constructor(scene, damageSystem, config) {
     this.scene = scene;
     this.damageSystem = damageSystem;
+    this.id = config.id || ('monster_' + Math.floor(Math.random() * 10000));
     this.name = config.name || 'Monster';
     this.level = config.level || 1;
     this.maxHp = config.maxHp || 45;
@@ -130,10 +131,11 @@ class Monster {
     }
   }
 
-  takeDamage(amount, isCrit = false, attackerPos = null) {
+  takeDamage(amount, isCrit = false, attackerPos = null, syncToNetwork = true) {
     if (this.isDead) return;
 
     this.hp -= amount;
+    this.updateHealthBar();
     this.damageSystem.spawnNumber(this.position.clone().add(new THREE.Vector3(0, 0.8, 0)), amount, isCrit ? 'crit' : 'normal');
     if (window.soundFX) window.soundFX.playHit(isCrit);
 
@@ -152,16 +154,22 @@ class Monster {
     // Aggro onto attacker immediately
     this.state = 'AGGRO';
 
+    // Broadcast damage to multiplayer server so party allies see shared monster damage
+    if (syncToNetwork && window.multiplayerSystem && window.multiplayerSystem.isConnected) {
+      window.multiplayerSystem.sendMonsterDamage(this.id, amount, isCrit, attackerPos);
+    }
+
     if (this.hp <= 0) {
-      this.die();
+      this.die(syncToNetwork);
     }
   }
 
-  die() {
+  die(syncToNetwork = true) {
+    if (this.isDead) return;
     this.isDead = true;
     this.state = 'DEAD';
     this.hp = 0;
-    this.respawnTimer = 14.0; // Respawns in 14 seconds
+    this.respawnTimer = this.isBoss ? 35.0 : 16.0;
 
     if (window.soundFX) {
       window.soundFX.playMonsterDeath();

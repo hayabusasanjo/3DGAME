@@ -37,8 +37,49 @@ class RemotePlayer {
     this.scene.add(this.container);
 
     this.createHtmlNameplate();
+    this.createFallbackMesh();
     this.loadModel();
     this.buildSculptedWolfMount();
+  }
+
+  createFallbackMesh() {
+    const classColors = { human: 0x38bdf8, elf: 0x34d399, dwarf: 0xfb923c, beastman: 0xf43f5e };
+    const color = classColors[this.classId] || 0x38bdf8;
+    this.fallbackGroup = new THREE.Group();
+
+    // Body Capsule
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.36, 0.30, 1.35, 12),
+      new THREE.MeshStandardMaterial({ color: color, roughness: 0.5, metalness: 0.1 })
+    );
+    body.position.y = 0.68;
+    body.castShadow = true;
+    this.fallbackGroup.add(body);
+
+    // Head Sphere with visor
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.32, 12, 10),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.7 })
+    );
+    head.position.y = 1.55;
+    head.castShadow = true;
+    this.fallbackGroup.add(head);
+
+    const visor = new THREE.Mesh(
+      new THREE.BoxGeometry(0.36, 0.1, 0.22),
+      new THREE.MeshBasicMaterial({ color: color })
+    );
+    visor.position.set(0, 1.58, 0.24);
+    this.fallbackGroup.add(visor);
+
+    this.container.add(this.fallbackGroup);
+  }
+
+  removeFallbackMesh() {
+    if (this.fallbackGroup) {
+      this.container.remove(this.fallbackGroup);
+      this.fallbackGroup = null;
+    }
   }
 
   createHtmlNameplate() {
@@ -151,7 +192,6 @@ class RemotePlayer {
 
     loader.load(modelPath, (gltf) => {
       const model = gltf.scene;
-      this.modelRoot = model;
 
       // Filter exact signature class weapons & armor (identical to CharacterLoader.js)
       const meshFilters = {
@@ -168,6 +208,7 @@ class RemotePlayer {
             child.visible = true;
             child.castShadow = true;
             child.receiveShadow = true;
+            child.frustumCulled = false; // Prevent camera frustum culled bug!
             if (child.material) {
               child.material.roughness = 0.55;
               child.material.metalness = 0.2;
@@ -178,22 +219,28 @@ class RemotePlayer {
         }
       });
 
-      // Calculate accurate bounding box of visible meshes
+      // Calculate accurate bounding box of visible meshes with bulletproof fallback
       model.updateMatrixWorld(true);
       const box = new THREE.Box3();
+      let meshCount = 0;
       model.traverse((child) => {
         if ((child.isMesh || child.isSkinnedMesh) && child.visible) {
           if (child.geometry) {
             if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
             box.expandByObject(child);
+            meshCount++;
           }
         }
       });
 
+      if (meshCount === 0 || box.isEmpty() || !isFinite(box.min.y)) {
+        box.setFromObject(model);
+      }
+
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
 
-      // Authentic Heroic Proportions & Race Sizing (identical to CharacterLoader.js)
+      // Authentic Heroic Proportions & Race Sizing
       let targetHeight = 1.95;
       let widthScale = 1.0;
       let depthScale = 1.0;
@@ -216,13 +263,18 @@ class RemotePlayer {
         depthScale = 1.0;
       }
 
-      const scale = targetHeight / (size.y || 1);
+      const rawHeight = (size.y && isFinite(size.y) && size.y > 0.05) ? size.y : 1.8;
+      const scale = targetHeight / rawHeight;
       model.scale.set(scale * widthScale, scale, scale * depthScale);
 
+      const minY = isFinite(box.min.y) ? box.min.y : 0;
+      const cX = isFinite(center.x) ? center.x : 0;
+      const cZ = isFinite(center.z) ? center.z : 0;
+
       // Store base offsets so feet stay exactly on ground plane
-      this.baseModelOffsetX = -center.x * scale * widthScale;
-      this.baseModelOffsetY = -box.min.y * scale;
-      this.baseModelOffsetZ = -center.z * scale * depthScale;
+      this.baseModelOffsetX = -cX * scale * widthScale;
+      this.baseModelOffsetY = -minY * scale;
+      this.baseModelOffsetZ = -cZ * scale * depthScale;
 
       model.position.set(this.baseModelOffsetX, this.baseModelOffsetY, this.baseModelOffsetZ);
 
@@ -246,8 +298,13 @@ class RemotePlayer {
         }
       }
 
+      this.removeFallbackMesh();
       this.container.add(model);
+      this.modelRoot = model;
+    }, undefined, (err) => {
+      console.warn('Could not load remote GLB model, fallback silhouette active:', err);
     });
+  }
   }
 
   buildSculptedWolfMount() {
@@ -526,6 +583,7 @@ class RemotePlayer {
 
   destroy() {
     this.scene.remove(this.container);
+    this.removeFallbackMesh();
     if (this.tagElement && this.tagElement.parentNode) {
       this.tagElement.parentNode.removeChild(this.tagElement);
     }
@@ -586,6 +644,10 @@ class MultiplayerSystem {
   connect(heroName, classId) {
     this.playerName = heroName || 'Hero';
     this.classId = classId || 'human';
+
+    // Clean up existing remote player avatars before starting new connection
+    this.remotePlayers.forEach(r => r.destroy());
+    this.remotePlayers.clear();
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${location.host}`;
@@ -649,6 +711,18 @@ class MultiplayerSystem {
     }
   }
 
+  sendMonsterDamage(monsterId, amount, isCrit, attackerPos) {
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({
+      type: 'monster_damage',
+      monsterId: monsterId,
+      amount: Math.round(amount),
+      isCrit: !!isCrit,
+      attackerName: this.playerName,
+      attackerPos: attackerPos ? { x: Number(attackerPos.x.toFixed(2)), y: Number(attackerPos.y.toFixed(2)), z: Number(attackerPos.z.toFixed(2)) } : null
+    }));
+  }
+
   transmitPlayerState() {
     if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     if (!this.playerController) return;
@@ -683,6 +757,22 @@ class MultiplayerSystem {
     if (msg.type === 'init') {
       this.myId = msg.id;
 
+      // Synchronize world monster states from server
+      if (msg.monsters && window.combatSystem) {
+        for (const [mId, mData] of Object.entries(msg.monsters)) {
+          const m = window.combatSystem.getMonsterById(mId);
+          if (m) {
+            m.hp = mData.hp;
+            m.updateHealthBar();
+            if (mData.isDead) {
+              m.isDead = true;
+              m.state = 'DEAD';
+              m.group.visible = false;
+            }
+          }
+        }
+      }
+
       // Spawn all existing players already in the world (Skip self or duplicate hero name)
       if (msg.existingPlayers && Array.isArray(msg.existingPlayers)) {
         msg.existingPlayers.forEach(pData => {
@@ -701,6 +791,37 @@ class MultiplayerSystem {
       if (pData && !isMe && !this.remotePlayers.has(pData.id)) {
         const remote = new RemotePlayer(this.scene, pData, this.camera);
         this.remotePlayers.set(pData.id, remote);
+      }
+    }
+
+    else if (msg.type === 'monster_damaged') {
+      if (window.combatSystem) {
+        const monster = window.combatSystem.getMonsterById(msg.monsterId);
+        if (monster) {
+          // Apply hit effect without re-transmitting to network
+          monster.takeDamage(msg.damage, msg.isCrit, msg.attackerPos, false);
+          monster.hp = msg.hp;
+          monster.updateHealthBar();
+
+          if (msg.isKilled && !monster.isDead) {
+            monster.die(false);
+            if (monster.isBoss && window.gameHUD) {
+              window.gameHUD.triggerZoneBanner('👑 BOSS SLAIN IN CO-OP!', `${monster.name} slain by party cooperation!`);
+            }
+          }
+        }
+      }
+    }
+
+    else if (msg.type === 'monster_respawn') {
+      if (window.combatSystem) {
+        const monster = window.combatSystem.getMonsterById(msg.monsterId);
+        if (monster) {
+          monster.respawn();
+          if (monster.isBoss && window.gameHUD) {
+            window.gameHUD.showSimpleToast(`⚠️ ${monster.name} has respawned!`);
+          }
+        }
       }
     }
 

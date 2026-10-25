@@ -38,6 +38,13 @@ class CombatSystem {
     this.spawnPlainsMonsters();
     this.hookPlayerAttack();
     this.bindPotionHotbar();
+
+    window.combatSystem = this;
+  }
+
+  getMonsterById(id) {
+    if (!this.monsters) return null;
+    return this.monsters.find(m => m.id === id);
   }
 
   setQuestSystem(questSystem) {
@@ -113,21 +120,23 @@ class CombatSystem {
 
     // 1. Central Meadow Path (Level 1 Azure Slimes & Level 3 Horned Rabbits)
     const azureSpawns = [
-      new THREE.Vector3(-6, 0.05, 28),
-      new THREE.Vector3(7, 0.05, 32)
+      { id: 'slime_azure_0', pos: new THREE.Vector3(-6, 0.05, 28) },
+      { id: 'slime_azure_1', pos: new THREE.Vector3(7, 0.05, 32) }
     ];
-    azureSpawns.forEach(pos => {
-      const slime = new SlimeMonster(this.scene, this.damageSystem, { type: 'azure', spawnPos: pos });
+    azureSpawns.forEach(item => {
+      const slime = new SlimeMonster(this.scene, this.damageSystem, { id: item.id, type: 'azure', spawnPos: item.pos });
+      slime.id = item.id;
       slime.onDeath = (m) => this.handleMonsterDeath(m);
       this.monsters.push(slime);
     });
 
     const rabbitSpawns = [
-      new THREE.Vector3(-8, 0.05, 42),
-      new THREE.Vector3(9, 0.05, 46)
+      { id: 'rabbit_0', pos: new THREE.Vector3(-8, 0.05, 42) },
+      { id: 'rabbit_1', pos: new THREE.Vector3(9, 0.05, 46) }
     ];
-    rabbitSpawns.forEach(pos => {
-      const rabbit = new HornedRabbitMonster(this.scene, this.damageSystem, { spawnPos: pos });
+    rabbitSpawns.forEach(item => {
+      const rabbit = new HornedRabbitMonster(this.scene, this.damageSystem, { id: item.id, spawnPos: item.pos });
+      rabbit.id = item.id;
       rabbit.onDeath = (m) => this.handleMonsterDeath(m);
       this.monsters.push(rabbit);
     });
@@ -135,19 +144,22 @@ class CombatSystem {
     // 2. South-West Zone: Slime Mire & King Slime Hollow (x: -45, z: 55)
     // Emerald Slime Minions guarding the marsh
     const emeraldSpawns = [
-      new THREE.Vector3(-36, 0.05, 50),
-      new THREE.Vector3(-52, 0.05, 60)
+      { id: 'slime_emerald_0', pos: new THREE.Vector3(-36, 0.05, 50) },
+      { id: 'slime_emerald_1', pos: new THREE.Vector3(-52, 0.05, 60) }
     ];
-    emeraldSpawns.forEach(pos => {
-      const slime = new SlimeMonster(this.scene, this.damageSystem, { type: 'emerald', spawnPos: pos });
+    emeraldSpawns.forEach(item => {
+      const slime = new SlimeMonster(this.scene, this.damageSystem, { id: item.id, type: 'emerald', spawnPos: item.pos });
+      slime.id = item.id;
       slime.onDeath = (m) => this.handleMonsterDeath(m);
       this.monsters.push(slime);
     });
 
     // Level 5 King Slime Mini-Boss in the center of the Slime Mire Arena!
     const kingSlime = new KingSlimeBoss(this.scene, this.damageSystem, {
+      id: 'boss_king_slime',
       spawnPos: new THREE.Vector3(-45, 0.05, 55)
     });
+    kingSlime.id = 'boss_king_slime';
     kingSlime.onDeath = (m) => this.handleMonsterDeath(m);
     this.monsters.push(kingSlime);
     this.boss = kingSlime;
@@ -155,41 +167,47 @@ class CombatSystem {
     // 3. North-East Zone: Goblin Ridge & Warband Encampment (x: 45, z: 58)
     // Level 5 KayKit Goblin Scouts patrolling their war camp
     const goblinSpawns = [
-      new THREE.Vector3(42, 0.05, 52),
-      new THREE.Vector3(48, 0.05, 62)
+      { id: 'goblin_0', pos: new THREE.Vector3(42, 0.05, 52) },
+      { id: 'goblin_1', pos: new THREE.Vector3(48, 0.05, 62) }
     ];
-    goblinSpawns.forEach(pos => {
-      const goblin = new GoblinScoutMonster(this.scene, this.damageSystem, { spawnPos: pos });
+    goblinSpawns.forEach(item => {
+      const goblin = new GoblinScoutMonster(this.scene, this.damageSystem, { id: item.id, spawnPos: item.pos });
+      goblin.id = item.id;
       goblin.onDeath = (m) => this.handleMonsterDeath(m);
       this.monsters.push(goblin);
     });
 
     // 4. Far North: Mystic Crystal Caverns (Dungeon Zone, z: 88 to 148)
     const spiderSpawns = [
-      new THREE.Vector3(-9, 0.05, 108),
-      new THREE.Vector3(10, 0.05, 118)
+      { id: 'spider_0', pos: new THREE.Vector3(-9, 0.05, 108) },
+      { id: 'spider_1', pos: new THREE.Vector3(10, 0.05, 118) }
     ];
-    spiderSpawns.forEach(pos => {
-      const spider = new CrystalSpiderMonster(this.scene, this.damageSystem, { spawnPos: pos });
+    spiderSpawns.forEach(item => {
+      const spider = new CrystalSpiderMonster(this.scene, this.damageSystem, { id: item.id, spawnPos: item.pos });
+      spider.id = item.id;
       spider.onDeath = (m) => this.handleMonsterDeath(m);
       this.monsters.push(spider);
     });
 
     // Dungeon Goblin Guard inside the cave
     const caveGoblin = new GoblinScoutMonster(this.scene, this.damageSystem, {
+      id: 'goblin_cave',
       name: 'Cave Goblin Berserker',
       level: 6,
       maxHp: 175,
       attackPower: 26,
       spawnPos: new THREE.Vector3(6, 0.05, 128)
     });
+    caveGoblin.id = 'goblin_cave';
     caveGoblin.onDeath = (m) => this.handleMonsterDeath(m);
     this.monsters.push(caveGoblin);
 
     // Level 8 Ancient Crystal Golem Final Dungeon Boss
     const golemBoss = new AncientCrystalGolemBoss(this.scene, this.damageSystem, {
+      id: 'boss_golem',
       spawnPos: new THREE.Vector3(0, 0.05, 142)
     });
+    golemBoss.id = 'boss_golem';
     golemBoss.onDeath = (m) => this.handleMonsterDeath(m);
     this.monsters.push(golemBoss);
     this.dungeonBoss = golemBoss;

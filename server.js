@@ -73,6 +73,23 @@ const wss = new WebSocketServer({ server });
 let nextId = 1001;
 const activePlayers = new Map(); // ws -> playerData
 
+// 3. Shared Monster & Boss World State (Synchronized Cooperative Multiplayer)
+const globalMonsters = {
+  'slime_azure_0': { maxHp: 45, hp: 45, isDead: false, isBoss: false },
+  'slime_azure_1': { maxHp: 45, hp: 45, isDead: false, isBoss: false },
+  'rabbit_0': { maxHp: 65, hp: 65, isDead: false, isBoss: false },
+  'rabbit_1': { maxHp: 65, hp: 65, isDead: false, isBoss: false },
+  'slime_emerald_0': { maxHp: 65, hp: 65, isDead: false, isBoss: false },
+  'slime_emerald_1': { maxHp: 65, hp: 65, isDead: false, isBoss: false },
+  'boss_king_slime': { maxHp: 420, hp: 420, isDead: false, isBoss: true },
+  'goblin_0': { maxHp: 120, hp: 120, isDead: false, isBoss: false },
+  'goblin_1': { maxHp: 120, hp: 120, isDead: false, isBoss: false },
+  'spider_0': { maxHp: 140, hp: 140, isDead: false, isBoss: false },
+  'spider_1': { maxHp: 140, hp: 140, isDead: false, isBoss: false },
+  'goblin_cave': { maxHp: 175, hp: 175, isDead: false, isBoss: false },
+  'boss_golem': { maxHp: 1400, hp: 1400, isDead: false, isBoss: true }
+};
+
 function broadcast(msg, excludeWs = null) {
   const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
   wss.clients.forEach(client => {
@@ -193,7 +210,8 @@ wss.on('connection', (ws) => {
           type: 'init',
           id: playerId,
           profile,
-          existingPlayers: others
+          existingPlayers: others,
+          monsters: globalMonsters
         }));
 
         // Broadcast new player arrival to everyone else
@@ -260,6 +278,38 @@ wss.on('connection', (ws) => {
             text: text,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           });
+        }
+      }
+
+      else if (data.type === 'monster_damage') {
+        const m = globalMonsters[data.monsterId];
+        if (m) {
+          m.hp = Math.max(0, m.hp - data.amount);
+          const isKilled = (m.hp <= 0 && !m.isDead);
+          if (isKilled) {
+            m.isDead = true;
+            const respawnTime = m.isBoss ? 35000 : 16000;
+            setTimeout(() => {
+              m.hp = m.maxHp;
+              m.isDead = false;
+              broadcast({
+                type: 'monster_respawn',
+                monsterId: data.monsterId
+              });
+            }, respawnTime);
+          }
+
+          broadcast({
+            type: 'monster_damaged',
+            monsterId: data.monsterId,
+            damage: data.amount,
+            hp: m.hp,
+            maxHp: m.maxHp,
+            isCrit: !!data.isCrit,
+            isKilled: isKilled,
+            attackerName: data.attackerName || 'Hero',
+            attackerPos: data.attackerPos
+          }, ws);
         }
       }
 
