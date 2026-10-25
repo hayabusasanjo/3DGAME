@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Isekai Chronicles: Phase 4 - Active Combat Skills, Master Blacksmith & Mystic Crystal Caverns</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 35%, #1e1b4b 0%, #090919 100%);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+    #viewport {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+
+  <!-- Stable Three.js & Core Loaders -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <!-- Modular Game Systems (Version 28 - Accurate 3D Models, Sculpted Wolf Sync, Crisp Nameplates & Instant Sync) -->
+  <script src="./src/world/Stage.js?v=28"></script>
+  <script src="./src/world/Town.js?v=28"></script>
+  <script src="./src/world/Plains.js?v=28"></script>
+  <script src="./src/world/Dungeon.js?v=28"></script>
+  <script src="./src/world/EnvironmentSystem.js?v=28"></script>
+  <script src="./src/world/WaystoneSystem.js?v=28"></script>
+  <script src="./src/characters/CharacterLoader.js?v=28"></script>
+  <script src="./src/characters/PlayerController.js?v=28"></script>
+  <script src="./src/characters/MountSystem.js?v=28"></script>
+  <script src="./src/combat/SoundEffects.js?v=28"></script>
+  <script src="./src/combat/DamageText.js?v=28"></script>
+  <script src="./src/combat/SkillSystem.js?v=28"></script>
+  <script src="./src/combat/InventorySystem.js?v=28"></script>
+  <script src="./src/combat/Monster.js?v=28"></script>
+  <script src="./src/combat/CombatSystem.js?v=28"></script>
+  <script src="./src/combat/QuestSystem.js?v=28"></script>
+  <script src="./src/ui/CharacterSelectUI.js?v=28"></script>
+  <script src="./src/ui/SaveSettingsSystem.js?v=28"></script>
+  <script src="./src/ui/HUD.js?v=28"></script>
+  <script src="./src/multiplayer/MultiplayerSystem.js?v=28"></script>
+</head>
+<body>
+  <canvas id="viewport"></canvas>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const canvas = document.getElementById('viewport');
+      let gameState = 'SELECT'; // 'SELECT' or 'PLAYING'
+
+      // 1. Initialize Stage & Character Loader
+      const stage = new Stage(canvas);
+      const characterLoader = new CharacterLoader(stage.scene);
+      characterLoader.loadRace('human', 'male');
+
+      // 2. Initialize Selection UI
+      const selectUI = new CharacterSelectUI(characterLoader, stage);
+
+      let town = null;
+      let plains = null;
+      let dungeon = null;
+      let damageSystem = null;
+      let combatSystem = null;
+      let skillSystem = null;
+      let inventorySystem = null;
+      let mountSystem = null;
+      let waystoneSystem = null;
+      let environmentSystem = null;
+      let questSystem = null;
+      let playerController = null;
+      let saveSystem = null;
+      let hud = null;
+      let multiplayerSystem = null;
+
+      // 3. Transition from Selection to Game World
+      selectUI.onStartAdventure = (chosenClass, avatarIcon, heroName) => {
+        if (gameState !== 'SELECT') return; // Prevent double initialization
+        gameState = 'PLAYING';
+
+        // Remove the pedestal showcase
+        if (stage.pedestal) {
+          stage.scene.remove(stage.pedestal);
+        }
+
+        // Disable orbit controls, enable 3rd person camera
+        stage.controls.enabled = false;
+
+        // Build 3D Starter Town & Guild Plaza (with Walk-in Guild Interior, Live NPCs & Shops)
+        town = new StarterTown(stage.scene);
+
+        // Build 3D Whispering Plains Outdoor Field (Phase 2)
+        plains = new WhisperingPlains(stage.scene);
+
+        // Build 3D Mystic Crystal Caverns Dungeon Map (Phase 4)
+        dungeon = new MysticCaverns(stage.scene);
+
+        // Setup Floating Damage Numbers & Hit Sparks
+        damageSystem = new DamageSystem(stage.scene, stage.camera);
+
+        // Setup 3rd Person WASD Player Controller with Raycast Ground Detection
+        playerController = new PlayerController(characterLoader, stage.camera, canvas);
+        playerController.position.set(0, 0.05, 7.5); // Spawn in front of fountain facing Guild
+        const allGroundMeshes = [
+          ...town.getGroundMeshes(),
+          ...plains.getGroundMeshes(),
+          ...dungeon.getGroundMeshes()
+        ];
+        playerController.setGroundMeshes(allGroundMeshes);
+
+        // Setup Action RPG Combat Engine
+        combatSystem = new CombatSystem(stage.scene, stage.camera, playerController, damageSystem);
+        combatSystem.setRace(chosenClass);
+
+        // Setup Active Combat Skills Engine (Phase 4)
+        skillSystem = new SkillSystem(stage.scene, stage.camera, playerController, combatSystem, damageSystem);
+        skillSystem.setRace(chosenClass);
+        playerController.setSkillSystem(skillSystem);
+        combatSystem.setSkillSystem(skillSystem);
+
+        // Setup RPG Grid Inventory & 3D Visual Equipment Engine (Phase 5)
+        inventorySystem = new InventorySystem(playerController, combatSystem);
+
+        // Setup Heroic Mount System (Phase 6)
+        mountSystem = new MountSystem(stage.scene, playerController);
+
+        // Setup Ancient Waystone Fast-Travel Teleporters (Phase 6)
+        waystoneSystem = new WaystoneSystem(stage.scene, playerController);
+
+        // Setup 24-Hour Day/Night Cycle & Dynamic Weather (Phase 7)
+        environmentSystem = new EnvironmentSystem(stage.scene, stage.sunLight, stage.hemiLight);
+        environmentSystem.setTownLamps(town.getLamps());
+
+        // Setup Guild Quest System (Phase 3 & 8)
+        questSystem = new QuestSystem(combatSystem);
+        combatSystem.setQuestSystem(questSystem);
+
+        // Setup In-Game RPG HUD (Connected to combat stats, quests, skills, gear & zones)
+        hud = new GameHUD(playerController, town, combatSystem, questSystem, skillSystem, inventorySystem, mountSystem, waystoneSystem, environmentSystem);
+        hud.setPlayerInfo(chosenClass, avatarIcon);
+        const nameEl = document.getElementById('plate-name');
+        if (nameEl) nameEl.innerText = heroName || 'Hero';
+
+        // Setup Real-Time Online Multiplayer Engine & In-Game Chat
+        multiplayerSystem = new MultiplayerSystem(stage.scene, playerController, characterLoader, mountSystem, combatSystem);
+        multiplayerSystem.connect(heroName, chosenClass);
+
+        // Setup Auto-Save & Settings System (Phase 9)
+        saveSystem = new SaveSettingsSystem(combatSystem, inventorySystem, questSystem, environmentSystem);
+        window.saveSystem = saveSystem;
+        saveSystem.loadGame(); // Restore saved progress if available!
+
+        // Start BGM
+        if (window.soundFX) {
+          window.soundFX.playBGM('town');
+        }
+      };
+
+      // 4. Main Animation Loop
+      const clock = new THREE.Clock();
+      function animate() {
+        requestAnimationFrame(animate);
+        const delta = Math.min(clock.getDelta(), 0.05);
+
+        if (gameState === 'SELECT') {
+          characterLoader.update(delta);
+          stage.update(delta);
+        } else if (gameState === 'PLAYING') {
+          if (playerController) playerController.update(delta);
+          if (characterLoader) characterLoader.update(delta);
+          if (mountSystem) mountSystem.update(delta);
+          if (waystoneSystem) waystoneSystem.update(delta);
+          if (environmentSystem) environmentSystem.update(delta, playerController ? playerController.position : null);
+          if (town) town.update(delta);
+          if (plains) plains.update(delta);
+          if (dungeon) dungeon.update(delta);
+          if (combatSystem) combatSystem.update(delta);
+          if (damageSystem) damageSystem.update(delta);
+          if (saveSystem) saveSystem.update(delta);
+          if (multiplayerSystem) multiplayerSystem.update(delta);
+          if (hud) hud.update();
+          stage.update(delta, playerController ? playerController.position : null);
+        }
+      }
+      animate();
+    });
+  </script>
+</body>
+</html>

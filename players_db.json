@@ -1,0 +1,74 @@
+{
+  "JEFF": {
+    "name": "JEFF",
+    "classId": "human",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "luigi": {
+    "name": "luigi",
+    "classId": "elf",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "hehe": {
+    "name": "hehe",
+    "classId": "dwarf",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "l": {
+    "name": "l",
+    "classId": "human",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "lluigi": {
+    "name": "lluigi",
+    "classId": "elf",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "hahaha": {
+    "name": "hahaha",
+    "classId": "beastman",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "hehehe": {
+    "name": "hehehe",
+    "classId": "dwarf",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "idol": {
+    "name": "idol",
+    "classId": "human",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  }
+}
