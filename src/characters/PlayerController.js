@@ -28,6 +28,8 @@ class PlayerController {
     this.minDistance = 2.0;
     this.maxDistance = 6.8;
     this.isMouseDown = false;
+    this.isAttackHolding = false;
+    this.isRightMouseDown = false;
 
     // Raycast Ground Detection
     this.groundMeshes = [];
@@ -47,6 +49,10 @@ class PlayerController {
     this.characterLoader.onActionComplete = (actionName) => {
       if (actionName === 'attack' || actionName === 'jump') {
         this.isAttacking = false;
+        if (actionName === 'attack' && this.isAttackHolding) {
+          this.attack();
+          return;
+        }
         const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d;
         this.characterLoader.setAction(isMoving ? 'run' : 'idle');
       }
@@ -197,7 +203,27 @@ class PlayerController {
           this.jump();
           break;
         case 'KeyF':
+        case 'KeyJ':
+          this.isAttackHolding = true;
           this.attack();
+          break;
+        case 'KeyK':
+          if (this.skillSystem) {
+            this.skillSystem.castSkill('Q');
+          }
+          break;
+        case 'KeyL':
+          if (this.skillSystem) {
+            this.skillSystem.castSkill('E');
+          }
+          break;
+        case 'AltLeft':
+        case 'AltRight':
+          if (document.pointerLockElement === this.domElement) {
+            document.exitPointerLock();
+          } else {
+            this.domElement.requestPointerLock();
+          }
           break;
         case 'KeyQ':
           if (this.skillSystem) {
@@ -238,33 +264,72 @@ class PlayerController {
         case 'KeyA': case 'ArrowLeft': this.keys.a = false; break;
         case 'KeyD': case 'ArrowRight': this.keys.d = false; break;
         case 'ShiftLeft': case 'ShiftRight': this.keys.shift = false; break;
+        case 'KeyF': case 'KeyJ': this.isAttackHolding = false; break;
       }
     });
 
-    // Mouse drag for camera & attack
+    // Disable browser context menu on canvas for Right-Click combat
+    this.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    // 1-Click Action Camera / Pointer Lock Engagement (Parang Genshin / Minecraft)
+    this.domElement.addEventListener('click', (e) => {
+      if (e.target.closest('#game-hud, #dialog-box, #card-modal, #game-chat-panel, #save-menu-modal')) return;
+      if (document.pointerLockElement !== this.domElement) {
+        this.domElement.requestPointerLock();
+      }
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+      const isLocked = (document.pointerLockElement === this.domElement);
+      const reticle = document.getElementById('rpg-crosshair');
+      if (reticle) {
+        if (isLocked) reticle.classList.add('locked');
+        else reticle.classList.remove('locked');
+      }
+    });
+
+    // Action Combat Mouse Clicks (Left = Continuous Attack, Right = Skill 1)
     this.domElement.addEventListener('mousedown', (e) => {
-      if (e.target.closest('#game-hud, #dialog-box, #card-modal')) return;
-      this.isMouseDown = true;
-      if (e.button === 0 && !this.isAttacking) {
-        this.attack();
+      if (e.target.closest('#game-hud, #dialog-box, #card-modal, #game-chat-panel, #save-menu-modal')) return;
+
+      if (document.pointerLockElement !== this.domElement) {
+        this.domElement.requestPointerLock();
+      }
+
+      if (e.button === 0) {
+        this.isAttackHolding = true;
+        if (!this.isAttacking) {
+          this.attack();
+        }
+      } else if (e.button === 2) {
+        this.isRightMouseDown = true;
+        if (this.skillSystem) {
+          this.skillSystem.castSkill('Q');
+        }
       }
     });
 
-    window.addEventListener('mouseup', () => {
-      this.isMouseDown = false;
+    window.addEventListener('mouseup', (e) => {
+      if (e.button === 0) {
+        this.isAttackHolding = false;
+      } else if (e.button === 2) {
+        this.isRightMouseDown = false;
+      }
     });
 
+    // Butter-Smooth Mouse Movement (No dragging required when locked!)
     window.addEventListener('mousemove', (e) => {
-      if (this.isMouseDown || document.pointerLockElement === this.domElement) {
-        this.cameraYaw -= (e.movementX || 0) * 0.0035;
-        this.cameraPitch -= (e.movementY || 0) * 0.003;
-        this.cameraPitch = Math.max(-0.08, Math.min(0.85, this.cameraPitch));
+      const isLocked = (document.pointerLockElement === this.domElement);
+      if (isLocked || this.isRightMouseDown) {
+        this.cameraYaw -= (e.movementX || 0) * 0.0028;
+        this.cameraPitch -= (e.movementY || 0) * 0.0022;
+        this.cameraPitch = Math.max(-0.15, Math.min(0.85, this.cameraPitch));
       }
     });
 
     // Zoom Camera with Scroll Wheel
     window.addEventListener('wheel', (e) => {
-      if (e.target.closest('#game-hud, #dialog-box, #card-modal')) return;
+      if (e.target.closest('#game-hud, #dialog-box, #card-modal, #game-chat-panel')) return;
       this.cameraDistance = Math.max(
         this.minDistance,
         Math.min(this.maxDistance, this.cameraDistance + e.deltaY * 0.004)
@@ -299,6 +364,12 @@ class PlayerController {
     }
     this.isAttacking = true;
     this.characterLoader.setAction('attack');
+
+    const reticle = document.getElementById('rpg-crosshair');
+    if (reticle) {
+      reticle.classList.add('attacking');
+      setTimeout(() => reticle.classList.remove('attacking'), 180);
+    }
   }
 
   sitDown(seat) {

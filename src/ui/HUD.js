@@ -69,6 +69,48 @@ class GameHUD {
           z-index: 70;
         }
 
+        /* Action Combat Crosshair / Reticle */
+        #rpg-crosshair {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          width: 20px;
+          height: 20px;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 65;
+          display: none;
+          transition: transform 0.12s ease-out;
+        }
+        #rpg-crosshair.locked {
+          display: block;
+        }
+        #rpg-crosshair::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border: 2px solid rgba(56, 189, 248, 0.75);
+          border-radius: 50%;
+          box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+          transition: all 0.15s ease;
+        }
+        #rpg-crosshair::after {
+          content: '';
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          width: 4px;
+          height: 4px;
+          background: #38bdf8;
+          border-radius: 50%;
+          box-shadow: 0 0 6px #38bdf8;
+        }
+        #rpg-crosshair.attacking::before {
+          border-color: #f43f5e;
+          box-shadow: 0 0 16px rgba(244, 63, 94, 0.9);
+          transform: scale(1.4);
+        }
+
         /* Top Left: Player Status & Stats */
         .hud-player-card {
           position: absolute;
@@ -1146,6 +1188,9 @@ class GameHUD {
         </div>
       </div>
 
+      <!-- Action Combat Aim Reticle / Crosshair -->
+      <div id="rpg-crosshair"></div>
+
       <!-- Loot Notifications Toast Stack -->
       <div id="toast-layer"></div>
 
@@ -1160,15 +1205,15 @@ class GameHUD {
         <div class="hud-slot"><span class="hud-key-tag">W A S D</span> Move</div>
         <div class="hud-slot"><span class="hud-key-tag">SHIFT</span> Sprint</div>
         <div class="hud-slot"><span class="hud-key-tag">SPACE</span> Jump</div>
-        <div class="hud-slot"><span class="hud-key-tag">L-CLICK / F</span> Attack</div>
+        <div class="hud-slot" title="Click or Hold to attack combo"><span class="hud-key-tag">L-CLICK / F / J</span> Attack (Hold)</div>
         <!-- Active Combat Skills [Q] and [E] -->
         <div class="hud-slot skill-slot" id="slot-skill-q" title="Skill 1">
-          <span class="hud-key-tag">Q</span> <span id="skill-icon-q">🛡️</span> <span id="skill-name-q">Skill 1</span>
+          <span class="hud-key-tag">R-CLICK / Q / K</span> <span id="skill-icon-q">🛡️</span> <span id="skill-name-q">Skill 1</span>
           <span class="skill-mp-tag" id="skill-mp-q">15 MP</span>
           <div class="skill-cooldown-overlay" id="skill-cd-overlay-q"></div>
         </div>
         <div class="hud-slot skill-slot" id="slot-skill-e" title="Skill 2">
-          <span class="hud-key-tag">E</span> <span id="skill-icon-e">✨</span> <span id="skill-name-e">Skill 2</span>
+          <span class="hud-key-tag">E / L</span> <span id="skill-icon-e">✨</span> <span id="skill-name-e">Skill 2</span>
           <span class="skill-mp-tag" id="skill-mp-e">25 MP</span>
           <div class="skill-cooldown-overlay" id="skill-cd-overlay-e"></div>
         </div>
@@ -1178,6 +1223,7 @@ class GameHUD {
         <div class="hud-slot" id="slot-mount" style="cursor: pointer;"><span class="hud-key-tag">T</span> 🐺 Mount</div>
         <div class="hud-slot" id="slot-inventory" style="cursor: pointer;"><span class="hud-key-tag">I</span> 🎒 Bag</div>
         <div class="hud-slot" id="slot-card" style="cursor: pointer;"><span class="hud-key-tag">C</span> Card</div>
+        <div class="hud-slot" style="cursor: pointer;" title="Toggle Mouse Cursor Freedom"><span class="hud-key-tag">ALT</span> Cursor</div>
         <div class="hud-slot" id="slot-settings" style="cursor: pointer;"><span class="hud-key-tag">ESC</span> ⚙️</div>
       </div>
 

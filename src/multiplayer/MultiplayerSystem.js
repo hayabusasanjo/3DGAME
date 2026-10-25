@@ -857,6 +857,12 @@ class MultiplayerSystem {
 
     sendBtn.addEventListener('click', sendCurrentMsg);
 
+    input.addEventListener('focus', () => {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    });
+
     input.addEventListener('keydown', (e) => {
       e.stopPropagation(); // Prevent WASD player movement while typing!
       if (e.key === 'Enter') {
@@ -869,6 +875,9 @@ class MultiplayerSystem {
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && document.activeElement !== input) {
         e.preventDefault();
+        if (document.pointerLockElement) {
+          document.exitPointerLock();
+        }
         input.focus();
       }
     });
