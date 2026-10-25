@@ -241,8 +241,8 @@ class MobileControls {
           position: fixed;
           top: 0;
           right: 0;
-          width: 55%;
-          height: 42%;
+          width: 65%;
+          height: 65%;
           pointer-events: auto;
           touch-action: none;
           z-index: 50;
@@ -405,6 +405,10 @@ class MobileControls {
       this.cameraTouchId = touch.identifier;
       this.lastCamX = touch.clientX;
       this.lastCamY = touch.clientY;
+      if (this.playerController) {
+        this.playerController.isManualCameraActive = true;
+        this.playerController.lastManualCameraTime = Date.now();
+      }
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
@@ -418,6 +422,8 @@ class MobileControls {
             this.lastCamY = t.clientY;
 
             if (this.playerController) {
+              this.playerController.isManualCameraActive = true;
+              this.playerController.lastManualCameraTime = Date.now();
               this.playerController.cameraYaw -= deltaX * 0.0055;
               this.playerController.cameraPitch -= deltaY * 0.0045;
               this.playerController.cameraPitch = Math.max(-0.15, Math.min(0.85, this.playerController.cameraPitch));
@@ -433,6 +439,10 @@ class MobileControls {
         for (let i = 0; i < e.changedTouches.length; i++) {
           if (e.changedTouches[i].identifier === this.cameraTouchId) {
             this.cameraTouchId = null;
+            if (this.playerController) {
+              this.playerController.isManualCameraActive = false;
+              this.playerController.lastManualCameraTime = Date.now();
+            }
             break;
           }
         }

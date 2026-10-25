@@ -31,6 +31,48 @@ class PlayerController {
     this.isAttackHolding = false;
     this.isRightMouseDown = false;
 
+    // Dynamic Auto-Follow & Manual Look Priority
+    this.lastManualCameraTime = 0;
+    this.isManualCameraActive = false;
+
+    // Smart Indoor Sanctuary Building Definitions (Zero Wall/Roof Clipping)
+    this.indoorBuildings = [
+      {
+        name: 'guild',
+        minX: -6.6, maxX: 6.6, minZ: -23.8, maxZ: -9.9,
+        maxCamDist: 2.2, minPitch: 0.18, maxPitch: 0.36, ceilY: 4.2
+      },
+      {
+        name: 'blacksmith',
+        minX: -17.4, maxX: -11.6, minZ: -8.0, maxZ: -2.0,
+        maxCamDist: 1.85, minPitch: 0.18, maxPitch: 0.35, ceilY: 3.4
+      },
+      {
+        name: 'alchemist',
+        minX: 11.6, maxX: 17.4, minZ: -8.0, maxZ: -2.0,
+        maxCamDist: 1.85, minPitch: 0.18, maxPitch: 0.35, ceilY: 3.4
+      },
+      {
+        name: 'tavern',
+        minX: -16.8, maxX: -10.2, minZ: 5.6, maxZ: 11.4,
+        maxCamDist: 1.85, minPitch: 0.18, maxPitch: 0.35, ceilY: 3.4
+      },
+      {
+        name: 'store',
+        minX: 10.2, maxX: 16.8, minZ: 5.6, maxZ: 11.4,
+        maxCamDist: 1.85, minPitch: 0.18, maxPitch: 0.35, ceilY: 3.4
+      }
+    ];
+
+    // Exterior Building Envelopes for Camera Anti-Clipping
+    this.exteriorBuildingBoxes = [
+      { minX: -7.2, maxX: 7.2, minZ: -24.4, maxZ: -9.8 }, // Guild Hall
+      { minX: -17.6, maxX: -11.4, minZ: -8.2, maxZ: -1.8 }, // Blacksmith
+      { minX: 11.4, maxX: 17.6, minZ: -8.2, maxZ: -1.8 },  // Alchemist
+      { minX: -17.0, maxX: -10.0, minZ: 5.4, maxZ: 11.6 }, // Tavern
+      { minX: 10.0, maxX: 17.0, minZ: 5.4, maxZ: 11.6 }   // Store
+    ];
+
     // Raycast Ground Detection
     this.groundMeshes = [];
     this.raycaster = new THREE.Raycaster();
@@ -190,6 +232,72 @@ class PlayerController {
     return 0.05;
   }
 
+  getCurrentIndoorBuilding() {
+    const px = this.position.x;
+    const pz = this.position.z;
+    for (let i = 0; i < this.indoorBuildings.length; i++) {
+      const b = this.indoorBuildings[i];
+      if (px >= b.minX && px <= b.maxX && pz >= b.minZ && pz <= b.maxZ) {
+        return b;
+      }
+    }
+    return null;
+  }
+
+  checkCameraWallCollision(px, pz, cx, cz) {
+    let closestFraction = 1.0;
+    const dx = cx - px;
+    const dz = cz - pz;
+    if (Math.abs(dx) < 0.0001 && Math.abs(dz) < 0.0001) return { x: cx, z: cz };
+
+    const camPad = 0.35;
+    for (let i = 0; i < this.exteriorBuildingBoxes.length; i++) {
+      const b = this.exteriorBuildingBoxes[i];
+      const minX = b.minX - camPad;
+      const maxX = b.maxX + camPad;
+      const minZ = b.minZ - camPad;
+      const maxZ = b.maxZ + camPad;
+
+      let t0 = 0.0;
+      let t1 = 1.0;
+
+      if (Math.abs(dx) > 0.00001) {
+        let tNear = (minX - px) / dx;
+        let tFar = (maxX - px) / dx;
+        if (tNear > tFar) { const tmp = tNear; tNear = tFar; tFar = tmp; }
+        t0 = Math.max(t0, tNear);
+        t1 = Math.min(t1, tFar);
+        if (t0 > t1) continue;
+      } else {
+        if (px < minX || px > maxX) continue;
+      }
+
+      if (Math.abs(dz) > 0.00001) {
+        let tNear = (minZ - pz) / dz;
+        let tFar = (maxZ - pz) / dz;
+        if (tNear > tFar) { const tmp = tNear; tNear = tFar; tFar = tmp; }
+        t0 = Math.max(t0, tNear);
+        t1 = Math.min(t1, tFar);
+        if (t0 > t1) continue;
+      } else {
+        if (pz < minZ || pz > maxZ) continue;
+      }
+
+      if (t0 > 0.001 && t0 < closestFraction) {
+        closestFraction = t0;
+      }
+    }
+
+    if (closestFraction < 1.0) {
+      const safeFraction = Math.max(0.12, closestFraction * 0.90);
+      return {
+        x: px + dx * safeFraction,
+        z: pz + dz * safeFraction
+      };
+    }
+    return { x: cx, z: cz };
+  }
+
   bindInputs() {
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
@@ -304,6 +412,9 @@ class PlayerController {
     window.addEventListener('mousemove', (e) => {
       const isLocked = (document.pointerLockElement === this.domElement);
       if (isLocked || this.isRightMouseDown) {
+        if (Math.abs(e.movementX || 0) > 0 || Math.abs(e.movementY || 0) > 0) {
+          this.lastManualCameraTime = Date.now();
+        }
         this.cameraYaw -= (e.movementX || 0) * 0.0028;
         this.cameraPitch -= (e.movementY || 0) * 0.0022;
         this.cameraPitch = Math.max(-0.15, Math.min(0.85, this.cameraPitch));
@@ -313,6 +424,7 @@ class PlayerController {
     // Zoom Camera with Scroll Wheel
     window.addEventListener('wheel', (e) => {
       if (e.target.closest('#game-hud, #dialog-box, #card-modal, #game-chat-panel')) return;
+      this.lastManualCameraTime = Date.now();
       this.cameraDistance = Math.max(
         this.minDistance,
         Math.min(this.maxDistance, this.cameraDistance + e.deltaY * 0.004)
@@ -744,6 +856,25 @@ class PlayerController {
       this.rotationY += diff * Math.min(1, 14 * delta);
       root.rotation.y = this.rotationY;
 
+      // Dynamic Auto-Follow Camera: Automatically swing camera behind player's movement
+      const now = Date.now();
+      const isManualControlling = this.isManualCameraActive || (now - this.lastManualCameraTime < 900);
+
+      if (!isManualControlling) {
+        // Desired camera yaw is directly behind movement vector
+        const desiredCamYaw = Math.atan2(-moveDir.x, -moveDir.z);
+        let camDiff = (desiredCamYaw - this.cameraYaw) % (Math.PI * 2);
+        if (camDiff < -Math.PI) camDiff += Math.PI * 2;
+        if (camDiff > Math.PI) camDiff -= Math.PI * 2;
+
+        const absDiff = Math.abs(camDiff);
+        if (absDiff > 0.015) {
+          // Dynamic responsive turn speed: fast on U-turns, smooth on gentle steering
+          const followSpeed = (absDiff > 1.8) ? 4.5 : (absDiff > 0.8 ? 3.2 : 2.2);
+          this.cameraYaw += camDiff * Math.min(1.0, followSpeed * delta);
+        }
+      }
+
       if (isRiding) {
         if (this.characterLoader.currentActionName !== 'sit') {
           this.characterLoader.setAction('sit');
@@ -773,24 +904,55 @@ class PlayerController {
       }
     }
 
-    // 8. Smooth Spring-Arm Heroic Camera Follow (Smart Indoor Auto-Zoom)
-    const isInsideGuild = this.position.z < -9.8 && Math.abs(this.position.x) < 6.8;
+    // 8. Smart Dynamic Heroic Camera Follow (Intelligent Indoor Anti-Clipping Bounds)
+    const indoor = this.getCurrentIndoorBuilding();
     const isInsideDungeon = this.position.z >= 88.0;
-    const activeCamDist = isInsideGuild ? Math.min(2.8, this.cameraDistance) :
-                          (isInsideDungeon ? Math.min(3.8, this.cameraDistance) : this.cameraDistance);
-    const activePitch = isInsideGuild ? Math.max(0.12, Math.min(0.35, this.cameraPitch)) :
-                        (isInsideDungeon ? Math.max(0.10, Math.min(0.42, this.cameraPitch)) : this.cameraPitch);
+
+    let targetCamDist = this.cameraDistance;
+    let targetPitch = this.cameraPitch;
+
+    if (indoor) {
+      targetCamDist = Math.min(indoor.maxCamDist, this.cameraDistance);
+      targetPitch = Math.max(indoor.minPitch, Math.min(indoor.maxPitch, this.cameraPitch));
+    } else if (isInsideDungeon) {
+      targetCamDist = Math.min(3.6, this.cameraDistance);
+      targetPitch = Math.max(0.12, Math.min(0.42, this.cameraPitch));
+    }
 
     const targetY = this.position.y + 1.25;
-    const cx = this.position.x + Math.sin(this.cameraYaw) * Math.cos(activePitch) * activeCamDist;
-    const cy = targetY + Math.sin(activePitch) * activeCamDist;
-    const cz = this.position.z + Math.cos(this.cameraYaw) * Math.cos(activePitch) * activeCamDist;
+    let cx = this.position.x + Math.sin(this.cameraYaw) * Math.cos(targetPitch) * targetCamDist;
+    let cy = targetY + Math.sin(targetPitch) * targetCamDist;
+    let cz = this.position.z + Math.cos(this.cameraYaw) * Math.cos(targetPitch) * targetCamDist;
 
-    // Ensure camera stays above local terrain surface
+    if (indoor) {
+      // 100% Guaranteed Indoor Sanctuary: Camera CANNOT leave the interior room!
+      const pad = 0.45;
+      cx = Math.max(indoor.minX + pad, Math.min(indoor.maxX - pad, cx));
+      cz = Math.max(indoor.minZ + pad, Math.min(indoor.maxZ - pad, cz));
+      cy = Math.min(cy, indoor.ceilY - 0.25);
+
+      // Instant boundary containment: prevent any frame from showing exterior walls
+      this.camera.position.x = Math.max(indoor.minX + pad, Math.min(indoor.maxX - pad, this.camera.position.x));
+      this.camera.position.z = Math.max(indoor.minZ + pad, Math.min(indoor.maxZ - pad, this.camera.position.z));
+      this.camera.position.y = Math.min(this.camera.position.y, indoor.ceilY - 0.25);
+    } else if (isInsideDungeon) {
+      // Cavern tunnel boundary clamp
+      cx = Math.max(-15.8, Math.min(15.8, cx));
+      cz = Math.max(88.2, Math.min(146.5, cz));
+    } else {
+      // When outside in town or plains: check exterior wall collision so camera never penetrates building walls!
+      const safeExterior = this.checkCameraWallCollision(this.position.x, this.position.z, cx, cz);
+      cx = safeExterior.x;
+      cz = safeExterior.z;
+    }
+
+    // Ensure camera stays comfortably above local ground terrain
     const camGroundY = this.getGroundHeight(cx, cz);
     const safeCy = Math.max(cy, camGroundY + 0.65);
 
-    this.camera.position.lerp(new THREE.Vector3(cx, safeCy, cz), 16 * delta);
+    // Smooth camera spring-arm interpolation
+    const lerpRate = indoor ? 22 : 16;
+    this.camera.position.lerp(new THREE.Vector3(cx, safeCy, cz), lerpRate * delta);
     this.camera.lookAt(this.position.x, targetY, this.position.z);
   }
 }
