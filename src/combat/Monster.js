@@ -162,6 +162,7 @@ class Monster {
 
     // Aggro onto attacker immediately
     this.state = 'AGGRO';
+    this.isControlledRemotely = false;
 
     // Broadcast damage to multiplayer server so party allies see shared monster damage
     if (syncToNetwork && window.multiplayerSystem && window.multiplayerSystem.isConnected) {
@@ -213,7 +214,7 @@ class Monster {
     if (!this.remoteSyncPos) this.remoteSyncPos = new THREE.Vector3();
     this.remoteSyncPos.set(x, y, z);
     this.remoteSyncRotY = rotY;
-    this.state = state;
+    this.remoteSyncState = state;
     this.remoteSyncTime = Date.now();
     this.isControlledRemotely = true;
     if (this.alertSprite) {
@@ -221,20 +222,12 @@ class Monster {
     }
   }
 
-  applyRemoteSync(delta, getGroundHeight) {
-    if (this.isControlledRemotely && this.remoteSyncPos && (Date.now() - this.remoteSyncTime < 3000)) {
-      this.position.lerp(this.remoteSyncPos, Math.min(1, 14 * delta));
-      if (getGroundHeight) {
-        this.position.y = getGroundHeight(this.position.x, this.position.z) + 0.05;
-      }
-      this.group.position.copy(this.position);
-      if (this.remoteSyncRotY !== null) {
-        this.group.rotation.y = this.remoteSyncRotY;
-      }
-      return true;
+  getRemoteTarget() {
+    if (this.isControlledRemotely && this.remoteSyncPos && (Date.now() - this.remoteSyncTime < 3200)) {
+      return this.remoteSyncPos;
     }
     this.isControlledRemotely = false;
-    return false;
+    return null;
   }
 
   getNearestPlayer(localPlayerPos) {
@@ -360,16 +353,16 @@ class SlimeMonster extends Monster {
       }
     }
 
-    // Apply remote peer co-op sync if active
-    if (this.applyRemoteSync(delta, getGroundHeight)) return;
+    // Remote Peer Co-Op Target Sync
+    const remoteTarget = this.getRemoteTarget();
 
     // Check nearest player among local and remote party members!
     const targetPlayer = this.getNearestPlayer(playerPos);
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
-    // Balanced chase leash: disengage if lured too far (> 55m)
-    if (distToSpawn > 55.0) {
+    // Balanced chase leash: disengage if lured excessively far (> 60m)
+    if (distToSpawn > 60.0) {
       if (this.state === 'AGGRO') {
         this.state = 'RETURNING';
         this.alertSprite.visible = false;
@@ -386,7 +379,13 @@ class SlimeMonster extends Monster {
     let moveTarget = null;
     let currentSpeed = this.speed;
 
-    if (this.state === 'RETURNING') {
+    if (remoteTarget) {
+      // Co-op peer is fighting or pulling this monster! Move naturally towards remote position!
+      moveTarget = remoteTarget;
+      currentSpeed = this.speed * 1.35;
+      this.state = this.remoteSyncState || 'AGGRO';
+      if (this.alertSprite) this.alertSprite.visible = true;
+    } else if (this.state === 'RETURNING') {
       moveTarget = this.spawnPos;
       currentSpeed = this.speed * 1.1;
       if (this.position.distanceTo(this.spawnPos) < 1.0) {
@@ -431,35 +430,37 @@ class SlimeMonster extends Monster {
       }
     }
 
-    // Procedural Wobble & Hopping
-    this.hopPhase += delta * (this.state === 'AGGRO' ? 8.5 : 4.5);
+    // Authentic Gelatinous Slime Physics: Spring Hop & Jelly Deformation
+    this.hopPhase += delta * (this.state === 'AGGRO' ? 7.5 : 3.8);
+    const hopSin = Math.sin(this.hopPhase);
+    const isAirborne = hopSin > 0.05;
+    const hopHeight = isAirborne ? hopSin * (this.state === 'AGGRO' ? 0.70 : 0.40) : 0;
+    this.meshGroup.position.y = hopHeight;
 
     if (moveTarget && this.state !== 'IDLE') {
       const dir = moveTarget.clone().sub(this.position);
       dir.y = 0;
-      if (dir.lengthSq() > 0.3) {
+      if (dir.lengthSq() > 0.15) {
         dir.normalize();
-        this.position.addScaledVector(dir, currentSpeed * delta);
-        this.position.z = Math.max(15.2, this.position.z); // Protected Town Safe Zone Barrier
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
+        // Realistic hop propulsion: only thrusts forward while spring-jumping in the air!
+        if (isAirborne) {
+          this.position.addScaledVector(dir, currentSpeed * 1.85 * delta);
+        }
       }
     }
 
-    // Slime squash and stretch hop
-    const hopSin = Math.sin(this.hopPhase);
-    const hopHeight = Math.max(0, hopSin) * (this.state === 'AGGRO' ? 0.75 : 0.45);
-    this.meshGroup.position.y = hopHeight;
-
-    if (hopHeight > 0.05) {
-      // Airborne stretch
-      this.meshGroup.scale.set(0.85, 1.25, 0.85);
+    if (isAirborne) {
+      // Mid-air elastic stretch
+      this.meshGroup.scale.set(0.85, 1.28, 0.85);
     } else {
-      // Landing squish
-      this.meshGroup.scale.set(1.15, 0.82, 1.15);
+      // Grounded impact jelly squish
+      const impactSquash = 1.0 + Math.abs(hopSin) * 0.28;
+      this.meshGroup.scale.set(impactSquash, 1.0 / impactSquash, impactSquash);
     }
 
     if (getGroundHeight) {
-      this.position.y = getGroundHeight(this.position.x, this.position.z);
+      this.position.y = getGroundHeight(this.position.x, this.position.z) + 0.05;
     }
 
     this.group.position.copy(this.position);
@@ -573,16 +574,16 @@ class HornedRabbitMonster extends Monster {
       }
     }
 
-    // Apply remote peer co-op sync if active
-    if (this.applyRemoteSync(delta, getGroundHeight)) return;
+    // Remote Peer Co-Op Target Sync
+    const remoteTarget = this.getRemoteTarget();
 
     // Check nearest player among local and remote party members!
     const targetPlayer = this.getNearestPlayer(playerPos);
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
-    // Balanced chase leash: disengage if lured too far (> 55m)
-    if (distToSpawn > 55.0) {
+    // Balanced chase leash: disengage if lured too far (> 60m)
+    if (distToSpawn > 60.0) {
       if (this.state === 'AGGRO') {
         this.state = 'RETURNING';
         this.alertSprite.visible = false;
@@ -597,7 +598,12 @@ class HornedRabbitMonster extends Monster {
     let moveTarget = null;
     let currentSpeed = this.speed;
 
-    if (this.state === 'RETURNING') {
+    if (remoteTarget) {
+      moveTarget = remoteTarget;
+      currentSpeed = this.speed * 1.35;
+      this.state = this.remoteSyncState || 'AGGRO';
+      if (this.alertSprite) this.alertSprite.visible = true;
+    } else if (this.state === 'RETURNING') {
       moveTarget = this.spawnPos;
       currentSpeed = this.speed * 1.1;
       if (this.position.distanceTo(this.spawnPos) < 1.0) {
@@ -640,24 +646,35 @@ class HornedRabbitMonster extends Monster {
       }
     }
 
-    this.hopPhase += delta * (this.state === 'AGGRO' ? 12.0 : 6.0);
+    // Authentic Bunny Rabbit Bounding Physics: Energetic Hop & Ear Tilt
+    this.hopPhase += delta * (this.state === 'AGGRO' ? 9.5 : 5.0);
+    const hopSin = Math.sin(this.hopPhase);
+    const isAirborne = hopSin > 0.05;
+    const hopHeight = isAirborne ? hopSin * (this.state === 'AGGRO' ? 0.60 : 0.35) : 0;
+    this.meshGroup.position.y = hopHeight;
 
     if (moveTarget && this.state !== 'IDLE') {
       const dir = moveTarget.clone().sub(this.position);
       dir.y = 0;
-      if (dir.lengthSq() > 0.3) {
+      if (dir.lengthSq() > 0.15) {
         dir.normalize();
-        this.position.addScaledVector(dir, currentSpeed * delta);
-        this.position.z = Math.max(15.2, this.position.z); // Protected Town Safe Zone Barrier
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
+        // Realistic rabbit bound: only thrusts forward while airborne in the leap!
+        if (isAirborne) {
+          this.position.addScaledVector(dir, currentSpeed * 1.75 * delta);
+        }
       }
     }
 
-    // Fast energetic hopping
-    const hopHeight = Math.max(0, Math.sin(this.hopPhase)) * 0.65;
-    this.meshGroup.position.y = hopHeight;
+    // Bunny ear tilt during leap
+    if (this.leftEar && this.rightEar) {
+      const earTilt = isAirborne ? -0.35 : 0.1;
+      this.leftEar.rotation.x = THREE.MathUtils.lerp(this.leftEar.rotation.x, earTilt, 0.2);
+      this.rightEar.rotation.x = THREE.MathUtils.lerp(this.rightEar.rotation.x, earTilt, 0.2);
+    }
+
     if (getGroundHeight) {
-      this.position.y = getGroundHeight(this.position.x, this.position.z);
+      this.position.y = getGroundHeight(this.position.x, this.position.z) + 0.05;
     }
 
     this.group.position.copy(this.position);
@@ -816,8 +833,8 @@ class KingSlimeBoss extends Monster {
       }
     }
 
-    // Apply remote peer co-op sync if active
-    if (this.applyRemoteSync(delta, getGroundHeight)) return;
+    // Remote Peer Co-Op Target Sync
+    const remoteTarget = this.getRemoteTarget();
 
     // Check nearest player among local and remote party members!
     const targetPlayer = this.getNearestPlayer(playerPos);
@@ -853,7 +870,12 @@ class KingSlimeBoss extends Monster {
     let moveTarget = null;
     let currentSpeed = this.speed;
 
-    if (this.state === 'RETURNING') {
+    if (remoteTarget) {
+      moveTarget = remoteTarget;
+      currentSpeed = this.speed * 1.35;
+      this.state = this.remoteSyncState || 'AGGRO';
+      if (this.alertSprite) this.alertSprite.visible = true;
+    } else if (this.state === 'RETURNING') {
       moveTarget = this.spawnPos;
       currentSpeed = this.speed * 1.1;
       if (this.position.distanceTo(this.spawnPos) < 1.5) {
@@ -1126,8 +1148,8 @@ class CrystalSpiderMonster extends Monster {
       }
     }
 
-    // Apply remote peer co-op sync if active
-    if (this.applyRemoteSync(delta, getGroundHeight)) return;
+    // Remote Peer Co-Op Target Sync
+    const remoteTarget = this.getRemoteTarget();
 
     // Check nearest player among local and remote party members!
     const targetPlayer = this.getNearestPlayer(playerPos);
@@ -1149,7 +1171,12 @@ class CrystalSpiderMonster extends Monster {
     let moveTarget = null;
     let currentSpeed = this.speed;
 
-    if (this.state === 'RETURNING') {
+    if (remoteTarget) {
+      moveTarget = remoteTarget;
+      currentSpeed = this.speed * 1.35;
+      this.state = this.remoteSyncState || 'AGGRO';
+      if (this.alertSprite) this.alertSprite.visible = true;
+    } else if (this.state === 'RETURNING') {
       moveTarget = this.spawnPos;
       currentSpeed = this.speed * 1.1;
       if (this.position.distanceTo(this.spawnPos) < 1.0) {
@@ -1206,7 +1233,6 @@ class CrystalSpiderMonster extends Monster {
       if (dir.lengthSq() > 0.3) {
         dir.normalize();
         this.position.addScaledVector(dir, currentSpeed * delta);
-        this.position.z = Math.max(15.2, this.position.z); // Protected Town Safe Zone Barrier
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
       }
     }
@@ -1508,8 +1534,8 @@ class GoblinScoutMonster extends Monster {
       }
     }
 
-    // Apply remote peer co-op sync if active
-    if (this.applyRemoteSync(delta, getGroundHeight)) return;
+    // Remote Peer Co-Op Target Sync
+    const remoteTarget = this.getRemoteTarget();
 
     // Check nearest player among local and remote party members!
     const targetPlayer = this.getNearestPlayer(playerPos);
@@ -1531,7 +1557,12 @@ class GoblinScoutMonster extends Monster {
     let moveTarget = null;
     let currentSpeed = this.speed;
 
-    if (this.state === 'RETURNING') {
+    if (remoteTarget) {
+      moveTarget = remoteTarget;
+      currentSpeed = this.speed * 1.35;
+      this.state = this.remoteSyncState || 'AGGRO';
+      if (this.alertSprite) this.alertSprite.visible = true;
+    } else if (this.state === 'RETURNING') {
       moveTarget = this.spawnPos;
       currentSpeed = this.speed * 1.1;
       if (this.position.distanceTo(this.spawnPos) < 1.0) {
@@ -1600,7 +1631,6 @@ class GoblinScoutMonster extends Monster {
       if (dir.lengthSq() > 0.3) {
         dir.normalize();
         this.position.addScaledVector(dir, currentSpeed * delta);
-        this.position.z = Math.max(15.2, this.position.z); // Protected Town Safe Zone Barrier
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
       }
     }
@@ -1722,8 +1752,8 @@ class AncientCrystalGolemBoss extends Monster {
 
     this.updateOverheadUI(camera);
 
-    // Apply remote peer co-op sync if active
-    if (this.applyRemoteSync(delta, getGroundHeight)) return;
+    // Remote Peer Co-Op Target Sync
+    const remoteTarget = this.getRemoteTarget();
 
     // Check nearest player among local and remote party members!
     const targetPlayer = this.getNearestPlayer(playerPos);
@@ -1757,11 +1787,16 @@ class AncientCrystalGolemBoss extends Monster {
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
-    // Boss leash boundary: stays in Dungeon Sanctum arena
-    if (distToSpawn > 32.0 || targetPlayer.pos.z < 88.0) {
+    let moveTarget = null;
+
+    if (remoteTarget) {
+      moveTarget = remoteTarget;
+      this.state = 'AGGRO';
+    } else if (distToSpawn > 32.0 || targetPlayer.pos.z < 88.0) {
       this.state = 'RETURNING';
     } else if (distToPlayer < 24.0) {
       this.state = 'AGGRO';
+      moveTarget = targetPlayer.pos;
     } else {
       this.state = 'IDLE';
     }
@@ -1777,10 +1812,10 @@ class AncientCrystalGolemBoss extends Monster {
         this.state = 'IDLE';
         this.hp = this.maxHp;
       }
-    } else if (this.state === 'AGGRO') {
+    } else if (this.state === 'AGGRO' && moveTarget) {
 
-      // Look at Player
-      const dir = targetPlayer.pos.clone().sub(this.position);
+      // Look at Player / Move Target
+      const dir = moveTarget.clone().sub(this.position);
       dir.y = 0;
       if (dir.lengthSq() > 0.1) {
         dir.normalize();
