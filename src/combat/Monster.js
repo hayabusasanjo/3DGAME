@@ -157,6 +157,7 @@ class Monster {
       const kbDir = this.position.clone().sub(attackerPos).normalize();
       kbDir.y = 0;
       this.position.addScaledVector(kbDir, isCrit ? 1.4 : 0.8);
+      this.position.z = Math.max(15.0, this.position.z); // Cannot be knocked back into Plaza Safezone!
       this.group.position.copy(this.position);
     }
 
@@ -212,7 +213,8 @@ class Monster {
 
   syncRemoteState(x, y, z, rotY, state) {
     if (!this.remoteSyncPos) this.remoteSyncPos = new THREE.Vector3();
-    this.remoteSyncPos.set(x, y, z);
+    const clampedZ = Math.max(15.0, z); // Plaza Safezone Barrier Protection
+    this.remoteSyncPos.set(x, y, clampedZ);
     this.remoteSyncRotY = rotY;
     this.remoteSyncState = state;
     this.remoteSyncTime = Date.now();
@@ -361,13 +363,16 @@ class SlimeMonster extends Monster {
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
-    // Balanced chase leash: disengage if lured excessively far (> 60m)
-    if (distToSpawn > 60.0) {
+    // Safezone Protection: Plaza & Town are sacred safe sanctuaries (z <= 15.0)
+    const isTargetInSafeZone = targetPlayer.pos.z <= 15.0;
+
+    // Balanced chase leash: disengage if lured excessively far (> 60m) or target entered plaza safezone!
+    if (distToSpawn > 60.0 || isTargetInSafeZone) {
       if (this.state === 'AGGRO') {
         this.state = 'RETURNING';
         this.alertSprite.visible = false;
       }
-    } else if (distToPlayer < this.aggroRadius && this.state !== 'RETURNING') {
+    } else if (distToPlayer < this.aggroRadius && !isTargetInSafeZone && this.state !== 'RETURNING') {
       if (this.state !== 'AGGRO') {
         this.state = 'AGGRO';
         this.alertSprite.visible = true;
@@ -446,6 +451,7 @@ class SlimeMonster extends Monster {
         // Realistic hop propulsion: only thrusts forward while spring-jumping in the air!
         if (isAirborne) {
           this.position.addScaledVector(dir, currentSpeed * 1.85 * delta);
+          this.position.z = Math.max(15.0, this.position.z); // Plaza Safezone Barrier!
         }
       }
     }
@@ -582,13 +588,16 @@ class HornedRabbitMonster extends Monster {
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
-    // Balanced chase leash: disengage if lured too far (> 60m)
-    if (distToSpawn > 60.0) {
+    // Safezone Protection: Plaza & Town are sacred safe sanctuaries (z <= 15.0)
+    const isTargetInSafeZone = targetPlayer.pos.z <= 15.0;
+
+    // Balanced chase leash: disengage if lured too far (> 60m) or target entered safezone!
+    if (distToSpawn > 60.0 || isTargetInSafeZone) {
       if (this.state === 'AGGRO') {
         this.state = 'RETURNING';
         this.alertSprite.visible = false;
       }
-    } else if (distToPlayer < this.aggroRadius && this.state !== 'RETURNING') {
+    } else if (distToPlayer < this.aggroRadius && !isTargetInSafeZone && this.state !== 'RETURNING') {
       if (this.state !== 'AGGRO') {
         this.state = 'AGGRO';
         this.alertSprite.visible = true;
@@ -662,6 +671,7 @@ class HornedRabbitMonster extends Monster {
         // Realistic rabbit bound: only thrusts forward while airborne in the leap!
         if (isAirborne) {
           this.position.addScaledVector(dir, currentSpeed * 1.75 * delta);
+          this.position.z = Math.max(15.0, this.position.z); // Plaza Safezone Barrier!
         }
       }
     }
@@ -841,15 +851,18 @@ class KingSlimeBoss extends Monster {
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
+    // Safezone Protection: Plaza & Town are sacred safe sanctuaries (z <= 16.5)
+    const isTargetInSafeZone = targetPlayer.pos.z <= 16.5;
+
     // Check Aggro & Leash Radius (Arena Bounds)
-    if (distToSpawn > 60.0) {
+    if (distToSpawn > 60.0 || isTargetInSafeZone) {
       if (this.state === 'AGGRO') {
         this.state = 'RETURNING';
         this.alertSprite.visible = false;
         this.isSlamming = false;
         this.slamHeight = 0;
       }
-    } else if (distToPlayer < this.aggroRadius && this.state !== 'RETURNING') {
+    } else if (distToPlayer < this.aggroRadius && !isTargetInSafeZone && this.state !== 'RETURNING') {
       if (this.state !== 'AGGRO') {
         this.state = 'AGGRO';
         this.alertSprite.visible = true;
@@ -960,6 +973,7 @@ class KingSlimeBoss extends Monster {
       if (dir.lengthSq() > 0.5) {
         dir.normalize();
         this.position.addScaledVector(dir, currentSpeed * delta);
+        this.position.z = Math.max(16.5, this.position.z); // Plaza Safezone Barrier!
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
       }
     }
@@ -1156,12 +1170,15 @@ class CrystalSpiderMonster extends Monster {
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
-    if (distToSpawn > 55.0) {
+    // Safezone Protection: Plaza & Town are sacred safe sanctuaries (z <= 15.0)
+    const isTargetInSafeZone = targetPlayer.pos.z <= 15.0;
+
+    if (distToSpawn > 55.0 || isTargetInSafeZone) {
       if (this.state === 'AGGRO') {
         this.state = 'RETURNING';
         this.alertSprite.visible = false;
       }
-    } else if (distToPlayer < this.aggroRadius && this.state !== 'RETURNING') {
+    } else if (distToPlayer < this.aggroRadius && !isTargetInSafeZone && this.state !== 'RETURNING') {
       if (this.state !== 'AGGRO') {
         this.state = 'AGGRO';
         this.alertSprite.visible = true;
@@ -1233,6 +1250,7 @@ class CrystalSpiderMonster extends Monster {
       if (dir.lengthSq() > 0.3) {
         dir.normalize();
         this.position.addScaledVector(dir, currentSpeed * delta);
+        this.position.z = Math.max(15.0, this.position.z); // Plaza Safezone Barrier!
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
       }
     }
@@ -1542,12 +1560,15 @@ class GoblinScoutMonster extends Monster {
     const distToPlayer = targetPlayer.dist;
     const distToSpawn = this.position.distanceTo(this.spawnPos);
 
-    if (distToSpawn > 55.0) {
+    // Safezone Protection: Plaza & Town are sacred safe sanctuaries (z <= 15.0)
+    const isTargetInSafeZone = targetPlayer.pos.z <= 15.0;
+
+    if (distToSpawn > 55.0 || isTargetInSafeZone) {
       if (this.state === 'AGGRO') {
         this.state = 'RETURNING';
         this.alertSprite.visible = false;
       }
-    } else if (distToPlayer < this.aggroRadius && this.state !== 'RETURNING') {
+    } else if (distToPlayer < this.aggroRadius && !isTargetInSafeZone && this.state !== 'RETURNING') {
       if (this.state !== 'AGGRO') {
         this.state = 'AGGRO';
         this.alertSprite.visible = true;
@@ -1631,6 +1652,7 @@ class GoblinScoutMonster extends Monster {
       if (dir.lengthSq() > 0.3) {
         dir.normalize();
         this.position.addScaledVector(dir, currentSpeed * delta);
+        this.position.z = Math.max(15.0, this.position.z); // Plaza Safezone Barrier!
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
       }
     }
@@ -1820,6 +1842,7 @@ class AncientCrystalGolemBoss extends Monster {
       if (dir.lengthSq() > 0.1) {
         dir.normalize();
         this.position.addScaledVector(dir, this.speed * delta);
+        this.position.z = Math.max(88.0, this.position.z); // Mystic Caverns Arena Barrier!
         this.group.rotation.y = Math.atan2(dir.x, dir.z);
       }
 
