@@ -144,6 +144,11 @@ class SkillSystem {
     const forward = new THREE.Vector3(Math.sin(pRotY), 0, Math.cos(pRotY)).normalize();
     const atk = this.combatSystem.attackPower;
 
+    // Broadcast skill cast to multiplayer peers!
+    if (window.multiplayerSystem && window.multiplayerSystem.isConnected) {
+      window.multiplayerSystem.sendPlayerAction('skill', { skillId: skill.id, race: this.race });
+    }
+
     switch (skill.id) {
       // 1. Human Knight Skills
       case 'shield_bash': {

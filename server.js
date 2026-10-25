@@ -44,6 +44,26 @@ const mimeTypes = {
 const server = http.createServer((req, res) => {
   // Normalize URL and remove query strings
   const safeUrl = req.url.split('?')[0];
+
+  // API Endpoint: Check Hero Name Uniqueness in Real-Time
+  if (safeUrl === '/api/check-name') {
+    const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const nameToCheck = (parsedUrl.searchParams.get('name') || '').trim().toLowerCase();
+    let isTaken = false;
+    for (const [activeWs, p] of activePlayers.entries()) {
+      if (activeWs.readyState === WebSocket.OPEN && p.name && p.name.toLowerCase() === nameToCheck) {
+        isTaken = true;
+        break;
+      }
+    }
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify({ available: !isTaken, name: nameToCheck }));
+    return;
+  }
+
   let filePath = path.join(PUBLIC_DIR, safeUrl === '/' ? 'index.html' : safeUrl);
 
   const ext = path.extname(filePath).toLowerCase();
@@ -152,19 +172,33 @@ wss.on('connection', (ws) => {
         const name = (data.name || 'Hero').slice(0, 15).trim() || 'Hero';
         const classId = data.classId || 'human';
 
-        // 1. Ghost Player Prevention: Prune any previous stale connection sharing the SAME name
+        // 1. Unique Hero Name & Duplicate Prevention:
+        let isTaken = false;
         for (const [existingWs, existingP] of activePlayers.entries()) {
           if (existingWs !== ws && existingP.name.toLowerCase() === name.toLowerCase()) {
-            console.log(`[Ghost Prune] Evicting older session for hero: ${name} (${existingP.id})`);
-            activePlayers.delete(existingWs);
-            broadcast({
-              type: 'player_left',
-              id: existingP.id
-            });
-            try {
-              existingWs.terminate();
-            } catch (e) {}
+            if (existingWs.readyState === WebSocket.OPEN) {
+              isTaken = true;
+              break;
+            } else {
+              // Stale/closed session, prune cleanly
+              activePlayers.delete(existingWs);
+              broadcast({
+                type: 'player_left',
+                id: existingP.id
+              });
+              try { existingWs.terminate(); } catch (e) {}
+            }
           }
+        }
+
+        if (isTaken) {
+          console.log(`[Reject Duplicate] Adventurer name "${name}" is currently in-use.`);
+          ws.send(JSON.stringify({
+            type: 'name_taken',
+            name: name,
+            message: `Hero name "${name}" is currently online in the world! Please choose a unique name.`
+          }));
+          return;
         }
 
         // Retrieve existing save or create new entry in local DB
@@ -261,7 +295,8 @@ wss.on('connection', (ws) => {
           broadcast({
             type: 'player_action',
             id: p.id,
-            action: data.action // 'attack', 'skill', 'cheer', etc.
+            action: data.action, // 'attack', 'skill', 'cheer', etc.
+            data: data.data || {}
           }, ws);
         }
       }

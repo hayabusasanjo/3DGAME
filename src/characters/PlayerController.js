@@ -234,27 +234,7 @@ class PlayerController {
           }
           break;
         case 'KeyE': {
-          if (this.isSitting) {
-            this.standUp();
-            break;
-          }
-          if (this.isSleeping) {
-            this.wakeUp();
-            break;
-          }
-          const hud = window.gameHUD;
-          const canInteractWithTarget = (this.canInteract && this.canInteract()) ||
-            (hud && (hud.isNearNpc || hud.isNearBoard || hud.isNearBlacksmith ||
-                     hud.isNearGuard || hud.isNearAlchemist || hud.isNearBarkeep ||
-                     hud.isNearVillagerArthur || hud.isNearVillagerAria || hud.isNearVillagerTom || hud.isNearWaystone ||
-                     hud.nearbyChair || hud.nearbyBed));
-          if (canInteractWithTarget) {
-            if (this.onInteract) this.onInteract();
-          } else if (this.skillSystem) {
-            this.skillSystem.castSkill('E');
-          } else if (this.onInteract) {
-            this.onInteract();
-          }
+          this.interact();
           break;
         }
       }
@@ -338,6 +318,30 @@ class PlayerController {
         Math.min(this.maxDistance, this.cameraDistance + e.deltaY * 0.004)
       );
     }, { passive: true });
+  }
+
+  interact() {
+    if (this.isSitting) {
+      this.standUp();
+      return;
+    }
+    if (this.isSleeping) {
+      this.wakeUp();
+      return;
+    }
+    const hud = window.gameHUD;
+    const canInteractWithTarget = (this.canInteract && this.canInteract()) ||
+      (hud && (hud.isNearNpc || hud.isNearBoard || hud.isNearBlacksmith ||
+               hud.isNearGuard || hud.isNearAlchemist || hud.isNearBarkeep ||
+               hud.isNearVillagerArthur || hud.isNearVillagerAria || hud.isNearVillagerTom || hud.isNearWaystone ||
+               hud.nearbyChair || hud.nearbyBed));
+    if (canInteractWithTarget) {
+      if (this.onInteract) this.onInteract();
+    } else if (this.skillSystem) {
+      this.skillSystem.castSkill('E');
+    } else if (this.onInteract) {
+      this.onInteract();
+    }
   }
 
   jump() {

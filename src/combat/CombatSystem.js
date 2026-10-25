@@ -286,6 +286,11 @@ class CombatSystem {
     const pPos = this.playerController.position;
     const pRotY = this.playerController.rotationY;
 
+    // Broadcast attack to multiplayer peers!
+    if (window.multiplayerSystem && window.multiplayerSystem.isConnected) {
+      window.multiplayerSystem.sendPlayerAction('attack', { race: this.race });
+    }
+
     // Forward direction player is facing
     const forward = new THREE.Vector3(Math.sin(pRotY), 0, Math.cos(pRotY)).normalize();
 

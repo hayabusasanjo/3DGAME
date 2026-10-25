@@ -54,7 +54,9 @@ class CharacterSelectUI {
   }
 
   createDom() {
-    const savedName = localStorage.getItem('isekai_hero_name') || 'Hero';
+    const defaultNames = ['Aether', 'Vanguard', 'Shadow', 'Luna', 'Kael', 'Rune', 'Blaze', 'Frost', 'Storm', 'Fenrir', 'Zephyr', 'Orion', 'Sol'];
+    const randomDefault = defaultNames[Math.floor(Math.random() * defaultNames.length)] + '_' + Math.floor(100 + Math.random() * 900);
+    const savedName = localStorage.getItem('isekai_hero_name') || randomDefault;
 
     const container = document.createElement('div');
     container.id = 'character-ui';
@@ -506,9 +508,13 @@ class CharacterSelectUI {
             <span>👤 MULTIPLAYER HERO LOGIN</span>
             <span class="server-status-badge"><span class="pulse-dot"></span> Online</span>
           </div>
-          <input type="text" id="login-hero-name" class="hero-name-input" placeholder="Enter Your Hero Name..." maxlength="15" value="${savedName}" autocomplete="off" />
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <input type="text" id="login-hero-name" class="hero-name-input" placeholder="Enter Your Hero Name..." maxlength="15" value="${savedName}" autocomplete="off" />
+            <button type="button" id="btn-random-name" title="Randomize Adventurer Name" style="background: rgba(30, 41, 59, 0.85); border: 1.5px solid #38bdf8; color: #38bdf8; border-radius: 12px; padding: 0 12px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; pointer-events: auto;">🎲</button>
+          </div>
+          <div id="hero-name-error" style="display: none; font-size: 11px; font-weight: 700; color: #f43f5e; margin-top: 2px;"></div>
           <div style="font-size: 11px; color: #94a3b8;">
-            Your level, inventory, and rank will automatically save to this hero profile!
+            Unique hero names ensure you and your friends explore together without duplicate avatars!
           </div>
         </div>
 
@@ -567,14 +573,71 @@ class CharacterSelectUI {
       });
     });
 
+    // Random Hero Name Generator
+    const defaultNames = ['Aether', 'Vanguard', 'Shadow', 'Luna', 'Kael', 'Rune', 'Blaze', 'Frost', 'Storm', 'Fenrir', 'Zephyr', 'Orion', 'Sol'];
+    const randomBtn = document.getElementById('btn-random-name');
+    if (randomBtn) {
+      randomBtn.addEventListener('click', () => {
+        const pick = defaultNames[Math.floor(Math.random() * defaultNames.length)] + '_' + Math.floor(100 + Math.random() * 900);
+        const input = document.getElementById('login-hero-name');
+        const err = document.getElementById('hero-name-error');
+        if (input) {
+          input.value = pick;
+          input.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+          input.focus();
+        }
+        if (err) err.style.display = 'none';
+      });
+    }
+
     // Enter Town / Join World
     const enterBtn = document.getElementById('btn-enter-town');
-    enterBtn.addEventListener('click', () => {
+    enterBtn.addEventListener('click', async () => {
       if (enterBtn.disabled) return;
-      enterBtn.disabled = true;
 
       const nameInput = document.getElementById('login-hero-name');
-      const heroName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Hero';
+      const errorEl = document.getElementById('hero-name-error');
+      let heroName = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : '';
+
+      if (!heroName) {
+        heroName = defaultNames[Math.floor(Math.random() * defaultNames.length)] + '_' + Math.floor(100 + Math.random() * 900);
+        if (nameInput) nameInput.value = heroName;
+      }
+
+      if (heroName.length < 2) {
+        if (errorEl) {
+          errorEl.textContent = '⚠️ Pangalan ay dapat hindi bababa sa 2 titik.';
+          errorEl.style.display = 'block';
+        }
+        return;
+      }
+
+      enterBtn.disabled = true;
+      const originalText = enterBtn.innerText;
+      enterBtn.innerText = '⏳ CHECKING REALM...';
+
+      try {
+        const res = await fetch(`/api/check-name?name=${encodeURIComponent(heroName)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.available) {
+            if (errorEl) {
+              errorEl.textContent = `❌ Ang "${heroName}" ay kasalukuyang online na! Pumili ng ibang pangalan.`;
+              errorEl.style.display = 'block';
+            }
+            if (nameInput) {
+              nameInput.style.borderColor = '#f43f5e';
+              nameInput.focus();
+            }
+            enterBtn.disabled = false;
+            enterBtn.innerText = originalText;
+            return;
+          }
+        }
+      } catch (e) {
+        // Fallback gracefully if server endpoint is loading
+      }
+
       localStorage.setItem('isekai_hero_name', heroName);
 
       this.container.style.opacity = '0';

@@ -305,7 +305,6 @@ class RemotePlayer {
       console.warn('Could not load remote GLB model, fallback silhouette active:', err);
     });
   }
-  }
 
   buildSculptedWolfMount() {
     const wolf = new THREE.Group();
@@ -475,6 +474,75 @@ class RemotePlayer {
       action.reset().fadeIn(0.15).play();
       this.currentAction = action;
     }
+  }
+
+  performAttack() {
+    this.setAnim('attack');
+    this.spawnVisualSlash();
+    if (window.soundFX) window.soundFX.playAttack(this.classId === 'elf' ? 'spell' : 'slash');
+  }
+
+  performSkill(data) {
+    this.setAnim('attack');
+    this.spawnVisualSkill(data);
+    if (window.soundFX) window.soundFX.playAttack('spell');
+  }
+
+  spawnVisualSlash() {
+    const arcGeo = new THREE.RingGeometry(1.2, 2.5, 16, 1, 0, Math.PI * 0.7);
+    arcGeo.rotateX(-Math.PI / 2);
+    let colorHex = 0x38bdf8;
+    if (this.classId === 'dwarf') colorHex = 0xef4444;
+    if (this.classId === 'beastman') colorHex = 0xa855f7;
+    if (this.classId === 'elf') colorHex = 0x10b981;
+
+    const mat = new THREE.MeshBasicMaterial({
+      color: colorHex,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending
+    });
+    const arcMesh = new THREE.Mesh(arcGeo, mat);
+    const pPos = this.container.position;
+    const rotY = this.container.rotation.y;
+    const forward = new THREE.Vector3(Math.sin(rotY), 0, Math.cos(rotY));
+    arcMesh.position.set(pPos.x + forward.x * 0.9, pPos.y + 0.9, pPos.z + forward.z * 0.9);
+    arcMesh.rotation.y = rotY - Math.PI * 0.35;
+    this.scene.add(arcMesh);
+
+    setTimeout(() => {
+      if (arcMesh.parent) arcMesh.parent.remove(arcMesh);
+    }, 220);
+  }
+
+  spawnVisualSkill(data) {
+    const ringGeo = new THREE.RingGeometry(0.5, 3.8, 24);
+    ringGeo.rotateX(-Math.PI / 2);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xfbbf24,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending
+    });
+    const ring = new THREE.Mesh(ringGeo, mat);
+    ring.position.set(this.container.position.x, this.container.position.y + 0.2, this.container.position.z);
+    this.scene.add(ring);
+
+    let scale = 1.0;
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      if (elapsed > 0.45) {
+        clearInterval(interval);
+        if (ring.parent) ring.parent.remove(ring);
+      } else {
+        scale += 0.15;
+        ring.scale.set(scale, 1, scale);
+        mat.opacity = (0.45 - elapsed) / 0.45;
+      }
+    }, 30);
   }
 
   update(delta, camera) {
@@ -711,6 +779,15 @@ class MultiplayerSystem {
     }
   }
 
+  sendPlayerAction(action, data = {}) {
+    if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    this.ws.send(JSON.stringify({
+      type: 'action',
+      action: action,
+      data: data
+    }));
+  }
+
   sendMonsterDamage(monsterId, amount, isCrit, attackerPos) {
     if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     this.ws.send(JSON.stringify({
@@ -773,10 +850,10 @@ class MultiplayerSystem {
         }
       }
 
-      // Spawn all existing players already in the world (Skip self or duplicate hero name)
+      // Spawn all existing players already in the world (Skip self)
       if (msg.existingPlayers && Array.isArray(msg.existingPlayers)) {
         msg.existingPlayers.forEach(pData => {
-          const isMe = pData.id === this.myId || (pData.name && pData.name.toLowerCase() === this.playerName.toLowerCase());
+          const isMe = (pData.id === this.myId);
           if (!isMe && !this.remotePlayers.has(pData.id)) {
             const remote = new RemotePlayer(this.scene, pData, this.camera);
             this.remotePlayers.set(pData.id, remote);
@@ -787,11 +864,18 @@ class MultiplayerSystem {
 
     else if (msg.type === 'player_joined') {
       const pData = msg.player;
-      const isMe = pData && (pData.id === this.myId || (pData.name && pData.name.toLowerCase() === this.playerName.toLowerCase()));
+      const isMe = pData && (pData.id === this.myId);
       if (pData && !isMe && !this.remotePlayers.has(pData.id)) {
         const remote = new RemotePlayer(this.scene, pData, this.camera);
         this.remotePlayers.set(pData.id, remote);
       }
+    }
+
+    else if (msg.type === 'name_taken') {
+      if (window.gameHUD) {
+        window.gameHUD.showSimpleToast(`⚠️ "${msg.name}" is already online!`);
+      }
+      alert(`⚠️ PANGALAN TAKEN: Ang Hero Name "${msg.name}" ay kasalukuyang online na sa server!\nPumili ng ibang natatanging pangalan.`);
     }
 
     else if (msg.type === 'monster_damaged') {
@@ -839,7 +923,13 @@ class MultiplayerSystem {
     else if (msg.type === 'player_action') {
       const remote = this.remotePlayers.get(msg.id);
       if (remote) {
-        remote.setAnim(msg.action);
+        if (msg.action === 'attack') {
+          remote.performAttack();
+        } else if (msg.action === 'skill') {
+          remote.performSkill(msg.data);
+        } else {
+          remote.setAnim(msg.action);
+        }
       }
     }
 

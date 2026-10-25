@@ -462,6 +462,15 @@ class GameHUD {
           align-items: center;
           gap: 10px;
           box-shadow: 0 0 30px rgba(56, 189, 248, 0.5);
+          pointer-events: auto;
+          cursor: pointer;
+          touch-action: manipulation;
+          z-index: 80;
+          transition: transform 0.12s ease;
+        }
+        .hud-interact-prompt:active {
+          transform: translate(-50%, -50%) scale(0.92);
+          background: #0284c7;
         }
         .hud-key-tag {
           background: #0284c7;
@@ -1812,6 +1821,18 @@ class GameHUD {
         this.toggleInventory();
       }
     });
+
+    // Prompt talk / interact click & touch listener (Works seamlessly on mobile & PC!)
+    const promptTalk = document.getElementById('prompt-talk');
+    if (promptTalk) {
+      promptTalk.addEventListener('click', () => {
+        if (this.playerController) this.playerController.interact();
+      });
+      promptTalk.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (this.playerController) this.playerController.interact();
+      }, { passive: false });
+    }
 
     // Potion click hotbar
     document.getElementById('slot-potion').addEventListener('click', () => {

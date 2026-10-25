@@ -70,5 +70,23 @@
     "exp": 0,
     "rank": "RANK F",
     "inventory": []
+  },
+  "Luffy": {
+    "name": "Luffy",
+    "classId": "human",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
+  },
+  "Zoro": {
+    "name": "Zoro",
+    "classId": "human",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
   }
 }

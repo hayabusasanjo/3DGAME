@@ -37,6 +37,12 @@ class MobileControls {
           display: ${this.isTouchDevice ? 'block' : 'none'};
         }
 
+        @media (max-width: 1024px), (pointer: coarse), (hover: none) {
+          #mobile-controls-container {
+            display: block !important;
+          }
+        }
+
         /* Top-Left Floating Chat Button */
         #mobile-chat-toggle-btn {
           position: absolute;
@@ -218,6 +224,18 @@ class MobileControls {
         }
         #m-btn-bag .m-btn-icon { font-size: 17px; }
 
+        /* 8. Talk / Interact Button (E) */
+        #m-btn-interact {
+          bottom: 12px;
+          right: 154px;
+          width: 48px;
+          height: 48px;
+          background: radial-gradient(circle at 35% 35%, #0284c7, #0f172a);
+          border-color: #38bdf8;
+          box-shadow: 0 0 14px rgba(56, 189, 248, 0.6);
+        }
+        #m-btn-interact .m-btn-icon { font-size: 19px; }
+
         /* Camera Swipe Touch Zone (Upper & Middle Screen only, safe from buttons!) */
         #mobile-camera-zone {
           position: fixed;
@@ -271,6 +289,10 @@ class MobileControls {
         <button class="m-btn" id="m-btn-bag" title="Open Inventory">
           <span class="m-btn-icon">🎒</span>
           <span class="m-btn-lbl">BAG</span>
+        </button>
+        <button class="m-btn" id="m-btn-interact" title="Talk / Interact (E)">
+          <span class="m-btn-icon">💬</span>
+          <span class="m-btn-lbl">TALK</span>
         </button>
       </div>
     `;
@@ -508,6 +530,11 @@ class MobileControls {
       if (bagModal) {
         bagModal.style.display = bagModal.style.display === 'flex' ? 'none' : 'flex';
       }
+    });
+
+    // Talk / Interact (E)
+    bindButton('m-btn-interact', () => {
+      if (this.playerController) this.playerController.interact();
     });
   }
 
