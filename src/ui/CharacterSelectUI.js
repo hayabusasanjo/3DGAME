@@ -354,6 +354,105 @@ class CharacterSelectUI {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
+
+        /* Mobile Landscape Responsive Optimization: Zero Overlap & Crystal-Clean Layout */
+        @media (max-width: 1024px), (max-height: 540px), (pointer: coarse) {
+          #character-ui {
+            padding: 8px 14px;
+          }
+          .header-section {
+            justify-content: center;
+          }
+          .header-title-box {
+            padding: 6px 16px;
+            border-radius: 12px;
+            text-align: center;
+          }
+          .header-title-box h1 {
+            font-size: 15px;
+            letter-spacing: 1.5px;
+          }
+          .header-title-box p {
+            font-size: 9px;
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+          }
+
+          /* Compact Left Class Bar */
+          .selection-left {
+            left: 10px;
+            top: 50px;
+            width: 120px;
+            gap: 6px;
+          }
+          .class-card-btn {
+            padding: 6px 10px;
+            border-radius: 10px;
+            gap: 8px;
+          }
+          .class-card-btn:hover, .class-card-btn.active {
+            transform: translateX(4px);
+          }
+          .class-card-icon {
+            font-size: 18px;
+          }
+          .class-card-title {
+            font-size: 11px;
+            letter-spacing: 0.5px;
+          }
+          .class-card-sub {
+            display: none;
+          }
+
+          /* Clean Right Login Card */
+          .selection-right {
+            right: 10px;
+            top: 50px;
+            width: 210px;
+            gap: 6px;
+          }
+          .login-card {
+            padding: 10px 14px;
+            border-radius: 14px;
+            gap: 6px;
+          }
+          .login-card-title {
+            font-size: 10px;
+            letter-spacing: 1px;
+          }
+          .server-status-badge {
+            font-size: 8px;
+            padding: 2px 6px;
+          }
+          .hero-name-input {
+            padding: 7px 10px;
+            font-size: 12px;
+            border-radius: 8px;
+          }
+          .spec-box {
+            display: none !important; /* Hide long stat bars on mobile landscape to showcase 3D hero model! */
+          }
+
+          /* Streamlined Bottom Enter World CTA */
+          .bottom-control-panel {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            gap: 0;
+            width: auto;
+          }
+          .action-preview-row {
+            display: none !important; /* Hide preview action buttons on mobile! */
+          }
+          .btn-enter-town {
+            padding: 10px 24px;
+            font-size: 13px;
+            border-radius: 14px;
+            letter-spacing: 1px;
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.6);
+          }
+        }
       </style>
 
       <!-- Top Header -->

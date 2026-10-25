@@ -94,121 +94,140 @@ class MobileControls {
         /* Ergonomic Action Buttons Cluster (Bottom Right) */
         .mobile-action-cluster {
           position: absolute;
-          bottom: 16px;
-          right: 16px;
-          width: 220px;
-          height: 220px;
+          bottom: 12px;
+          right: 12px;
+          width: 250px;
+          height: 240px;
           pointer-events: none;
+          z-index: 70;
         }
 
         .m-btn {
           position: absolute;
           border-radius: 50%;
           display: flex;
+          flex-direction: column;
           align-items: center;
           justify-content: center;
           color: white;
-          font-family: 'Segoe UI', sans-serif;
+          font-family: 'Segoe UI', -apple-system, sans-serif;
           font-weight: 800;
           pointer-events: auto;
-          touch-action: none;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          touch-action: manipulation;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
           transition: transform 0.08s ease, filter 0.08s ease;
-          border: 2px solid rgba(255, 255, 255, 0.3);
+          border: 2px solid rgba(255, 255, 255, 0.35);
+          user-select: none;
+          -webkit-user-select: none;
+          cursor: pointer;
         }
         .m-btn:active, .m-btn.pressed {
-          transform: scale(0.90);
-          filter: brightness(1.3);
+          transform: scale(0.88);
+          filter: brightness(1.35);
+        }
+        .m-btn-icon {
+          line-height: 1;
+        }
+        .m-btn-lbl {
+          font-size: 8px;
+          font-weight: 900;
+          letter-spacing: 0.5px;
+          margin-top: 1px;
+          text-transform: uppercase;
+          opacity: 0.95;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
         }
 
-        /* Big Attack Button (Primary thumb resting point) */
+        /* 1. Big Attack Button (Primary thumb resting point) */
         #m-btn-attack {
-          bottom: 16px;
-          right: 16px;
-          width: 68px;
-          height: 68px;
+          bottom: 10px;
+          right: 10px;
+          width: 70px;
+          height: 70px;
           background: radial-gradient(circle at 35% 35%, #f43f5e, #be123c);
-          font-size: 28px;
           border-color: #fda4af;
-          box-shadow: 0 0 16px rgba(244, 63, 94, 0.7);
+          box-shadow: 0 0 18px rgba(244, 63, 94, 0.8);
         }
+        #m-btn-attack .m-btn-icon { font-size: 26px; }
 
-        /* Jump Button */
+        /* 2. Jump Button (Above Attack, with distinct JUMP tag & icon) */
         #m-btn-jump {
           bottom: 96px;
-          right: 16px;
-          width: 46px;
-          height: 46px;
-          background: rgba(30, 41, 59, 0.85);
-          font-size: 19px;
-          border-color: #cbd5e1;
+          right: 10px;
+          width: 52px;
+          height: 52px;
+          background: radial-gradient(circle at 35% 35%, #0284c7, #0369a1);
+          border-color: #7dd3fc;
+          box-shadow: 0 0 14px rgba(2, 132, 199, 0.7);
         }
+        #m-btn-jump .m-btn-icon { font-size: 20px; }
 
-        /* Skill 1 Button (Q) */
+        /* 3. Skill 1 Button (Q) */
         #m-btn-skill1 {
           bottom: 74px;
-          right: 74px;
-          width: 48px;
-          height: 48px;
-          background: radial-gradient(circle at 35% 35%, #0ea5e9, #0369a1);
-          font-size: 20px;
-          border-color: #7dd3fc;
+          right: 76px;
+          width: 50px;
+          height: 50px;
+          background: radial-gradient(circle at 35% 35%, #0ea5e9, #0284c7);
+          border-color: #bae6fd;
         }
+        #m-btn-skill1 .m-btn-icon { font-size: 19px; }
 
-        /* Skill 2 Button (E) */
+        /* 4. Skill 2 Button (E) */
         #m-btn-skill2 {
-          bottom: 16px;
-          right: 96px;
+          bottom: 10px;
+          right: 94px;
+          width: 50px;
+          height: 50px;
+          background: radial-gradient(circle at 35% 35%, #8b5cf6, #6d28d9);
+          border-color: #ddd6fe;
+        }
+        #m-btn-skill2 .m-btn-icon { font-size: 19px; }
+
+        /* 5. Wolf Mount Button */
+        #m-btn-mount {
+          bottom: 136px;
+          right: 76px;
           width: 48px;
           height: 48px;
-          background: radial-gradient(circle at 35% 35%, #8b5cf6, #6d28d9);
-          font-size: 20px;
-          border-color: #c4b5fd;
-        }
-
-        /* Mount Button (Wolf) */
-        #m-btn-mount {
-          bottom: 132px;
-          right: 74px;
-          width: 42px;
-          height: 42px;
-          background: rgba(15, 23, 42, 0.85);
-          font-size: 17px;
+          background: radial-gradient(circle at 35% 35%, #334155, #0f172a);
           border-color: #38bdf8;
+          box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
         }
+        #m-btn-mount .m-btn-icon { font-size: 18px; }
 
-        /* Potion Button */
+        /* 6. Potion Button */
         #m-btn-potion {
-          bottom: 132px;
-          right: 126px;
-          width: 42px;
-          height: 42px;
-          background: rgba(15, 23, 42, 0.85);
-          font-size: 17px;
-          border-color: #34d399;
+          bottom: 136px;
+          right: 134px;
+          width: 46px;
+          height: 46px;
+          background: radial-gradient(circle at 35% 35%, #059669, #065f46);
+          border-color: #6ee7b7;
         }
+        #m-btn-potion .m-btn-icon { font-size: 17px; }
 
-        /* Bag Button */
+        /* 7. Bag Button */
         #m-btn-bag {
           bottom: 74px;
-          right: 132px;
-          width: 42px;
-          height: 42px;
-          background: rgba(15, 23, 42, 0.85);
-          font-size: 17px;
-          border-color: #fbbf24;
+          right: 138px;
+          width: 46px;
+          height: 46px;
+          background: radial-gradient(circle at 35% 35%, #d97706, #92400e);
+          border-color: #fde68a;
         }
+        #m-btn-bag .m-btn-icon { font-size: 17px; }
 
-        /* Camera Swipe Touch Zone (Upper & Middle Screen) */
+        /* Camera Swipe Touch Zone (Upper & Middle Screen only, safe from buttons!) */
         #mobile-camera-zone {
           position: fixed;
           top: 0;
           right: 0;
-          width: 65%;
-          height: 60%;
+          width: 55%;
+          height: 42%;
           pointer-events: auto;
           touch-action: none;
-          z-index: 52;
+          z-index: 50;
         }
       </style>
 
@@ -223,15 +242,36 @@ class MobileControls {
         <div id="mobile-joystick-stick"></div>
       </div>
 
-      <!-- Action Buttons Cluster -->
+      <!-- Action Buttons Cluster with Clear Icons & Mini Labels -->
       <div class="mobile-action-cluster">
-        <button class="m-btn" id="m-btn-attack" title="Attack">⚔️</button>
-        <button class="m-btn" id="m-btn-jump" title="Jump">🦘</button>
-        <button class="m-btn" id="m-btn-skill1" title="Skill 1">🛡️</button>
-        <button class="m-btn" id="m-btn-skill2" title="Skill 2">✨</button>
-        <button class="m-btn" id="m-btn-mount" title="Wolf Mount">🐺</button>
-        <button class="m-btn" id="m-btn-potion" title="Heal Potion">🧪</button>
-        <button class="m-btn" id="m-btn-bag" title="Open Inventory">🎒</button>
+        <button class="m-btn" id="m-btn-attack" title="Attack">
+          <span class="m-btn-icon">⚔️</span>
+          <span class="m-btn-lbl">ATK</span>
+        </button>
+        <button class="m-btn" id="m-btn-jump" title="Jump">
+          <span class="m-btn-icon">⏫</span>
+          <span class="m-btn-lbl">JUMP</span>
+        </button>
+        <button class="m-btn" id="m-btn-skill1" title="Skill 1">
+          <span class="m-btn-icon">🛡️</span>
+          <span class="m-btn-lbl">SKL 1</span>
+        </button>
+        <button class="m-btn" id="m-btn-skill2" title="Skill 2">
+          <span class="m-btn-icon">✨</span>
+          <span class="m-btn-lbl">SKL 2</span>
+        </button>
+        <button class="m-btn" id="m-btn-mount" title="Wolf Mount">
+          <span class="m-btn-icon">🐺</span>
+          <span class="m-btn-lbl">WOLF</span>
+        </button>
+        <button class="m-btn" id="m-btn-potion" title="Heal Potion">
+          <span class="m-btn-icon">🧪</span>
+          <span class="m-btn-lbl">POT</span>
+        </button>
+        <button class="m-btn" id="m-btn-bag" title="Open Inventory">
+          <span class="m-btn-icon">🎒</span>
+          <span class="m-btn-lbl">BAG</span>
+        </button>
       </div>
     `;
 
@@ -262,8 +302,10 @@ class MobileControls {
       const race = this.skillSystem.race || 'human';
       const skills = this.skillSystem.skillsByRace[race];
       if (skills) {
-        if (skills.Q && skills.Q.icon) document.getElementById('m-btn-skill1').innerText = skills.Q.icon;
-        if (skills.E && skills.E.icon) document.getElementById('m-btn-skill2').innerText = skills.E.icon;
+        const s1 = document.querySelector('#m-btn-skill1 .m-btn-icon');
+        const s2 = document.querySelector('#m-btn-skill2 .m-btn-icon');
+        if (s1 && skills.Q && skills.Q.icon) s1.innerText = skills.Q.icon;
+        if (s2 && skills.E && skills.E.icon) s2.innerText = skills.E.icon;
       }
     }
   }
@@ -377,24 +419,37 @@ class MobileControls {
     window.addEventListener('touchend', endCameraTouch);
     window.addEventListener('touchcancel', endCameraTouch);
 
-    // 3. Action Buttons Bindings
+    // 3. Action Buttons Bindings (Supports touch, pointer, and click!)
     const bindButton = (id, onDown, onUp) => {
       const el = document.getElementById(id);
       if (!el) return;
 
-      el.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      const press = (e) => {
+        if (e && e.cancelable) e.preventDefault();
         el.classList.add('pressed');
         if (onDown) onDown();
-      }, { passive: false });
+      };
 
-      el.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      const release = (e) => {
+        if (e && e.cancelable) e.preventDefault();
         el.classList.remove('pressed');
         if (onUp) onUp();
-      }, { passive: false });
+      };
+
+      el.addEventListener('touchstart', press, { passive: false });
+      el.addEventListener('touchend', release, { passive: false });
+      el.addEventListener('pointerdown', (e) => {
+        if (e.pointerType !== 'touch') press(e);
+      });
+      el.addEventListener('pointerup', (e) => {
+        if (e.pointerType !== 'touch') release(e);
+      });
+      el.addEventListener('click', (e) => {
+        if (!el.classList.contains('pressed')) {
+          press(e);
+          setTimeout(() => release(e), 120);
+        }
+      });
     };
 
     // Attack
@@ -426,7 +481,20 @@ class MobileControls {
 
     // Wolf Mount (T)
     bindButton('m-btn-mount', () => {
-      if (this.mountSystem) this.mountSystem.toggleMount();
+      const ms = this.mountSystem || window.gameMount;
+      if (ms) {
+        ms.toggleMount();
+        const btn = document.getElementById('m-btn-mount');
+        if (btn) {
+          if (ms.isMounted) {
+            btn.style.borderColor = '#fbbf24';
+            btn.style.boxShadow = '0 0 16px #fbbf24';
+          } else {
+            btn.style.borderColor = '#38bdf8';
+            btn.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.5)';
+          }
+        }
+      }
     });
 
     // Healing Potion (1)

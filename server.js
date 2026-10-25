@@ -82,7 +82,49 @@ function broadcast(msg, excludeWs = null) {
   });
 }
 
+// Heartbeat Ping-Pong to automatically prune Ghost / Stale Mobile connections
+function heartbeat() {
+  this.isAlive = true;
+}
+
+const pingInterval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      const p = activePlayers.get(ws);
+      if (p) {
+        console.log(`[Ghost Prune] Disconnecting inactive connection for ${p.name} (${p.id})`);
+        activePlayers.delete(ws);
+        broadcast({
+          type: 'player_left',
+          id: p.id
+        });
+        broadcast({
+          type: 'chat',
+          sender: 'SYSTEM',
+          classId: 'system',
+          text: `🚪 ${p.name} disconnected.`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+      }
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    try {
+      ws.ping();
+    } catch (e) {
+      ws.terminate();
+    }
+  });
+}, 8000); // Check every 8 seconds
+
+wss.on('close', () => {
+  clearInterval(pingInterval);
+});
+
 wss.on('connection', (ws) => {
+  ws.isAlive = true;
+  ws.on('pong', heartbeat);
+
   const playerId = 'hero_' + (nextId++);
 
   ws.on('message', (raw) => {
@@ -92,6 +134,21 @@ wss.on('connection', (ws) => {
       if (data.type === 'join') {
         const name = (data.name || 'Hero').slice(0, 15).trim() || 'Hero';
         const classId = data.classId || 'human';
+
+        // 1. Ghost Player Prevention: Prune any previous stale connection sharing the SAME name
+        for (const [existingWs, existingP] of activePlayers.entries()) {
+          if (existingWs !== ws && existingP.name.toLowerCase() === name.toLowerCase()) {
+            console.log(`[Ghost Prune] Evicting older session for hero: ${name} (${existingP.id})`);
+            activePlayers.delete(existingWs);
+            broadcast({
+              type: 'player_left',
+              id: existingP.id
+            });
+            try {
+              existingWs.terminate();
+            } catch (e) {}
+          }
+        }
 
         // Retrieve existing save or create new entry in local DB
         let profile = playerDB[name];
@@ -126,10 +183,10 @@ wss.on('connection', (ws) => {
 
         activePlayers.set(ws, playerData);
 
-        // Send initialization packet with existing players & user's profile
+        // Send initialization packet with existing active players & user's profile
         const others = [];
         activePlayers.forEach((p, otherWs) => {
-          if (otherWs !== ws) others.push(p);
+          if (otherWs !== ws && otherWs.readyState === WebSocket.OPEN) others.push(p);
         });
 
         ws.send(JSON.stringify({

@@ -250,6 +250,10 @@ class MountSystem {
     if (window.gameHUD) {
       window.gameHUD.triggerZoneBanner('🐺 MOUNT SUMMONED', 'Celestial Silver Wolf (+120% Movement Speed)');
     }
+
+    if (window.multiplayerSystem) {
+      window.multiplayerSystem.transmitPlayerState();
+    }
   }
 
   dismount() {
@@ -271,6 +275,10 @@ class MountSystem {
     if (window.soundFX) {
       window.soundFX.playAttack('spell');
     }
+
+    if (window.multiplayerSystem) {
+      window.multiplayerSystem.transmitPlayerState();
+    }
   }
 
   update(delta) {
@@ -283,11 +291,14 @@ class MountSystem {
     this.mountGroup.position.set(pPos.x, pPos.y, pPos.z);
     this.mountGroup.rotation.y = pRotY + Math.PI;
 
-    // Check if moving
+    // Check if moving (Keyboard WASD or Mobile Touchscreen Joystick)
     const isMoving = this.playerController.keys.w ||
                      this.playerController.keys.s ||
                      this.playerController.keys.a ||
-                     this.playerController.keys.d;
+                     this.playerController.keys.d ||
+                     (this.playerController.joystickInput &&
+                      (Math.abs(this.playerController.joystickInput.x) > 0.05 ||
+                       Math.abs(this.playerController.joystickInput.y) > 0.05));
 
     // Keep hero in sitting/riding posture on saddle
     if (this.playerController.characterLoader && this.playerController.characterLoader.currentActionName !== 'sit') {

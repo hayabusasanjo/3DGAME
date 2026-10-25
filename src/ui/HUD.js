@@ -1159,6 +1159,60 @@ class GameHUD {
             font-size: 11px !important;
             padding: 6px 14px !important;
           }
+
+          /* 8. Mobile Notification & Banner Optimization - Clean, Sleek & Non-Obtrusive! */
+          #zone-banner {
+            top: 50px !important;
+            padding: 6px 18px !important;
+            border-top: 1.5px solid #38bdf8 !important;
+            border-bottom: 1.5px solid #38bdf8 !important;
+            border-radius: 10px !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7) !important;
+            max-width: 85vw !important;
+          }
+          .zone-banner-title {
+            font-size: 13px !important;
+            letter-spacing: 1px !important;
+          }
+          .zone-banner-sub {
+            font-size: 9px !important;
+            letter-spacing: 1px !important;
+            margin-top: 2px !important;
+          }
+
+          /* Scale down Level Up banner on mobile */
+          #levelup-banner {
+            top: 36% !important;
+            padding: 14px 26px !important;
+            border-width: 2px !important;
+            border-radius: 16px !important;
+            max-width: 85vw !important;
+          }
+          .levelup-title {
+            font-size: 18px !important;
+            letter-spacing: 1.5px !important;
+          }
+          .levelup-sub {
+            font-size: 11px !important;
+            margin-top: 4px !important;
+          }
+
+          /* Reposition and scale Toast notifications so they NEVER block mobile action buttons */
+          #toast-layer {
+            top: 60px !important;
+            left: 14px !important;
+            bottom: auto !important;
+            right: auto !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+            max-width: 240px !important;
+          }
+          .loot-toast {
+            font-size: 10px !important;
+            padding: 4px 10px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+          }
         }
       </style>
 

@@ -53,8 +53,11 @@ class PlayerController {
           this.attack();
           return;
         }
-        const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d;
-        this.characterLoader.setAction(isMoving ? 'run' : 'idle');
+        const isMoving = this.keys.w || this.keys.s || this.keys.a || this.keys.d ||
+                         (this.joystickInput && (Math.abs(this.joystickInput.x) > 0.05 || Math.abs(this.joystickInput.y) > 0.05));
+        if (this.isGrounded) {
+          this.characterLoader.setAction(isMoving ? 'run' : 'idle');
+        }
       }
     };
   }
@@ -741,16 +744,28 @@ class PlayerController {
         if (this.characterLoader.currentActionName !== 'sit') {
           this.characterLoader.setAction('sit');
         }
-      } else if (!this.isAttacking && this.characterLoader.currentActionName !== 'run') {
-        this.characterLoader.setAction('run');
+      } else if (!this.isAttacking) {
+        if (this.isGrounded) {
+          if (this.characterLoader.currentActionName !== 'run') {
+            this.characterLoader.setAction('run');
+          }
+        } else {
+          if (this.characterLoader.currentActionName !== 'jump') {
+            this.characterLoader.setAction('jump');
+          }
+        }
       }
     } else {
       if (isRiding) {
         if (this.characterLoader.currentActionName !== 'sit') {
           this.characterLoader.setAction('sit');
         }
-      } else if (!this.isAttacking && this.characterLoader.currentActionName === 'run') {
-        this.characterLoader.setAction('idle');
+      } else if (!this.isAttacking) {
+        if (this.isGrounded) {
+          if (this.characterLoader.currentActionName === 'run') {
+            this.characterLoader.setAction('idle');
+          }
+        }
       }
     }
 

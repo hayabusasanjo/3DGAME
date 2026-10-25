@@ -554,6 +554,7 @@ class MultiplayerSystem {
 
     this.createChatUI();
     this.bindWindowEvents();
+    window.multiplayerSystem = this;
   }
 
   bindWindowEvents() {
@@ -567,6 +568,18 @@ class MultiplayerSystem {
     window.addEventListener('focus', sendInstantSync);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) sendInstantSync();
+    });
+
+    // Cleanly close connection on mobile app suspend or page leave to prevent ghost player avatars
+    window.addEventListener('beforeunload', () => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.close();
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.close();
+      }
     });
   }
 
@@ -670,10 +683,11 @@ class MultiplayerSystem {
     if (msg.type === 'init') {
       this.myId = msg.id;
 
-      // Spawn all existing players already in the world
+      // Spawn all existing players already in the world (Skip self or duplicate hero name)
       if (msg.existingPlayers && Array.isArray(msg.existingPlayers)) {
         msg.existingPlayers.forEach(pData => {
-          if (pData.id !== this.myId && !this.remotePlayers.has(pData.id)) {
+          const isMe = pData.id === this.myId || (pData.name && pData.name.toLowerCase() === this.playerName.toLowerCase());
+          if (!isMe && !this.remotePlayers.has(pData.id)) {
             const remote = new RemotePlayer(this.scene, pData, this.camera);
             this.remotePlayers.set(pData.id, remote);
           }
@@ -683,7 +697,8 @@ class MultiplayerSystem {
 
     else if (msg.type === 'player_joined') {
       const pData = msg.player;
-      if (pData && pData.id !== this.myId && !this.remotePlayers.has(pData.id)) {
+      const isMe = pData && (pData.id === this.myId || (pData.name && pData.name.toLowerCase() === this.playerName.toLowerCase()));
+      if (pData && !isMe && !this.remotePlayers.has(pData.id)) {
         const remote = new RemotePlayer(this.scene, pData, this.camera);
         this.remotePlayers.set(pData.id, remote);
       }
