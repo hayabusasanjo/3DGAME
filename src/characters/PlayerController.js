@@ -619,8 +619,13 @@ class PlayerController {
     if (this.keys.a) moveInput.x -= 1;
     if (this.keys.d) moveInput.x += 1;
 
-    const isMoving = moveInput.lengthSq() > 0;
-    if (isMoving) moveInput.normalize();
+    if (this.joystickInput && (this.joystickInput.x !== 0 || this.joystickInput.y !== 0)) {
+      moveInput.x = this.joystickInput.x;
+      moveInput.z = this.joystickInput.y;
+    }
+
+    const isMoving = moveInput.lengthSq() > 0.001;
+    if (isMoving && moveInput.lengthSq() > 1) moveInput.normalize();
 
     const currentSpeed = this.keys.shift ? this.speed * 1.5 : this.speed;
 
