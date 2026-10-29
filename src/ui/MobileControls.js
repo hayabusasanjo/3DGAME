@@ -424,8 +424,8 @@ class MobileControls {
             if (this.playerController) {
               this.playerController.isManualCameraActive = true;
               this.playerController.lastManualCameraTime = Date.now();
-              this.playerController.cameraYaw -= deltaX * 0.0055;
-              this.playerController.cameraPitch -= deltaY * 0.0045;
+              this.playerController.cameraYaw -= deltaX * 0.0028;
+              this.playerController.cameraPitch -= deltaY * 0.0020;
               this.playerController.cameraPitch = Math.max(-0.15, Math.min(0.85, this.playerController.cameraPitch));
             }
             break;

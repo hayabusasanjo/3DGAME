@@ -106,5 +106,14 @@
     "exp": 0,
     "rank": "RANK F",
     "inventory": []
+  },
+  "Fenrir_404": {
+    "name": "Fenrir_404",
+    "classId": "human",
+    "level": 1,
+    "gold": 0,
+    "exp": 0,
+    "rank": "RANK F",
+    "inventory": []
   }
 }

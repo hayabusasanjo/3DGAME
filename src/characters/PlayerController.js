@@ -415,8 +415,8 @@ class PlayerController {
         if (Math.abs(e.movementX || 0) > 0 || Math.abs(e.movementY || 0) > 0) {
           this.lastManualCameraTime = Date.now();
         }
-        this.cameraYaw -= (e.movementX || 0) * 0.0028;
-        this.cameraPitch -= (e.movementY || 0) * 0.0022;
+        this.cameraYaw -= (e.movementX || 0) * 0.0018;
+        this.cameraPitch -= (e.movementY || 0) * 0.0014;
         this.cameraPitch = Math.max(-0.15, Math.min(0.85, this.cameraPitch));
       }
     });
@@ -856,9 +856,9 @@ class PlayerController {
       this.rotationY += diff * Math.min(1, 14 * delta);
       root.rotation.y = this.rotationY;
 
-      // Dynamic Auto-Follow Camera: Automatically swing camera behind player's movement
+      // Dynamic Auto-Follow Camera: Gentle & Cinematic Steadicam (Zero Motion Sickness)
       const now = Date.now();
-      const isManualControlling = this.isManualCameraActive || (now - this.lastManualCameraTime < 900);
+      const isManualControlling = this.isManualCameraActive || (now - this.lastManualCameraTime < 1600);
 
       if (!isManualControlling) {
         // Desired camera yaw is directly behind movement vector
@@ -868,10 +868,12 @@ class PlayerController {
         if (camDiff > Math.PI) camDiff -= Math.PI * 2;
 
         const absDiff = Math.abs(camDiff);
-        if (absDiff > 0.015) {
-          // Dynamic responsive turn speed: fast on U-turns, smooth on gentle steering
-          const followSpeed = (absDiff > 1.8) ? 4.5 : (absDiff > 0.8 ? 3.2 : 2.2);
-          this.cameraYaw += camDiff * Math.min(1.0, followSpeed * delta);
+        // Generous deadzone (~20 degrees / 0.35 rad): small steering does NOT shake or rotate the camera
+        if (absDiff > 0.35) {
+          // Gentle, calm rotation speed (silky smooth, never dizzying)
+          const followSpeed = (absDiff > 2.0) ? 2.2 : 1.35;
+          // Apply smooth damping so it eases in and out smoothly
+          this.cameraYaw += Math.sign(camDiff) * Math.min(absDiff - 0.35, Math.pow(absDiff, 1.2) * followSpeed * delta);
         }
       }
 
@@ -950,8 +952,8 @@ class PlayerController {
     const camGroundY = this.getGroundHeight(cx, cz);
     const safeCy = Math.max(cy, camGroundY + 0.65);
 
-    // Smooth camera spring-arm interpolation
-    const lerpRate = indoor ? 22 : 16;
+    // Smooth camera spring-arm interpolation (Calm Steadicam gimbal feel)
+    const lerpRate = indoor ? 10.0 : 7.5;
     this.camera.position.lerp(new THREE.Vector3(cx, safeCy, cz), lerpRate * delta);
     this.camera.lookAt(this.position.x, targetY, this.position.z);
   }
